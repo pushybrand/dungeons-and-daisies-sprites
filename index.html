@@ -46,12 +46,6 @@ let midgroundImg;
 let titleImg;
 let backgroundX = 0;
 let midgroundX = 0;
-let jumpSound;
-let collectSound;
-let gameOverSound;
-let themeMusic;
-let bossMusic;
-let flameSound;
 let scaleFactor = 1;
 let originalWidth = 800;
 let originalHeight = 400;
@@ -64,12 +58,13 @@ let keys = {};
 
 function preload() {
   try {
-    // Corrected image URLs. Assuming all images are in the root of the repository.
-    playerRunSprites[0] = loadImage('./player_run1.png.PNG',
+    // Corrected image URLs based on common file naming conventions.
+    // Please ensure these filenames match your repository exactly, including case.
+    playerRunSprites[0] = loadImage('./player_run1.png',
       () => console.log('Player run sprite 1 loaded'),
       () => console.error('Failed to load player run sprite 1')
     );
-    playerRunSprites[1] = loadImage('./player_run2.png.PNG',
+    playerRunSprites[1] = loadImage('./player_run2.png',
       () => console.log('Player run sprite 2 loaded'),
       () => console.error('Failed to load player run sprite 2'));
     playerRunSwordSprites[0] = loadImage('./run_sword1.png',
@@ -99,7 +94,6 @@ function preload() {
       () => console.log('Background loaded'),
       () => console.error('Failed to load background image')
     );
-    // Corrected to midground_chains.png based on your repo change
     midgroundImg = loadImage('./midground_chains.png',
       () => console.log('Midground loaded'),
       () => console.error('Failed to load midground image')
@@ -107,32 +101,6 @@ function preload() {
     titleImg = loadImage('./Dungeons_Daisies_title.png',
       () => console.log('Title image loaded'),
       () => console.error('Failed to load title image')
-    );
-    // Sound files - these need to be downloaded and placed in the same repository as the HTML file.
-    // The Pixabay links are commented out to prevent 403 errors.
-    jumpSound = loadSound('./audio_jump.mp3',
-      () => console.log('Jump sound loaded'),
-      () => console.error('Failed to load jump sound')
-    );
-    collectSound = loadSound('./audio_collect.mp3',
-      () => console.log('Collect sound loaded'),
-      () => console.error('Failed to load collect sound')
-    );
-    gameOverSound = loadSound('./game_over.mp3',
-      () => console.log('Game over sound loaded'),
-      () => console.error('Failed to load game over sound')
-    );
-    themeMusic = loadSound('./ES_Dizzy_Dazzle.mp3',
-      () => console.log('Theme music loaded'),
-      () => console.error('Failed to load theme music')
-    );
-    bossMusic = loadSound('./ES_Ninja Skills - Ava Low.mp3',
-      () => console.log('Boss music loaded'),
-      () => console.error('Failed to load boss music')
-    );
-    flameSound = loadSound('./8-bit-fireball-81148.mp3',
-      () => console.log('Flame sound loaded'),
-      () => console.error('Failed to load flame sound')
     );
   } catch (e) {
     console.error('Preload error:', e);
@@ -181,12 +149,12 @@ class Player {
   jump() {
     this.vy = this.jumpForce;
     this.isJumping = true;
-    if (jumpSound) jumpSound.play();
+    // Removed sound function for now
   }
 
   attack() {
     greenFlames.push(new GreenFlame(this.x + this.w, this.y + this.h / 2));
-    if (flameSound) flameSound.play();
+    // Removed sound function for now
   }
 
   update() {
@@ -456,8 +424,6 @@ function resetGame() {
   greenFlames = [];
   redFlames = [];
   gameState = "playing";
-  if (themeMusic && !themeMusic.isPlaying()) themeMusic.loop();
-  if (bossMusic && bossMusic.isPlaying()) bossMusic.stop();
   if (restartButton) {
     restartButton.remove();
     restartButton = null;
@@ -468,7 +434,6 @@ function keyPressed() {
   if (key === ' ' && (gameState === "title" || gameState === "playing" || gameState === "boss") && !player.isJumping) {
     if (gameState === "title") {
       gameState = "playing";
-      if (themeMusic) themeMusic.loop();
     } else {
       player.jump();
     }
@@ -495,7 +460,6 @@ function keyReleased() {
 function touchStarted() {
   if (gameState === "title") {
     gameState = "playing";
-    if (themeMusic) themeMusic.loop();
   } else if ((gameState === "playing" || gameState === "boss") && !player.isJumping) {
     player.jump();
   } else if (gameOver) {
@@ -559,8 +523,6 @@ function draw() {
       obstacles[i].show();
       if (obstacles[i].hits(player)) {
         gameOver = true;
-        if (gameOverSound) gameOverSound.play();
-        if (themeMusic) themeMusic.stop();
       }
       if (obstacles[i].offscreen()) {
         obstacles.splice(i, 1);
@@ -573,7 +535,6 @@ function draw() {
       if (daisies[i].hits(player)) {
         score += 10;
         daisies.splice(i, 1);
-        if (collectSound) collectSound.play();
       }
       if (daisies[i].offscreen()) {
         daisies.splice(i, 1);
@@ -587,8 +548,6 @@ function draw() {
 
     if (score >= 200 && !sword) {
       sword = new Sword();
-      if (themeMusic && themeMusic.isPlaying()) themeMusic.stop();
-      if (bossMusic && !bossMusic.isPlaying()) bossMusic.loop();
     }
 
     if (sword) {
@@ -598,7 +557,6 @@ function draw() {
         sword = null;
         boss = new Boss();
         gameState = "boss";
-        if (collectSound) collectSound.play();
       }
     }
   }
@@ -640,8 +598,6 @@ function draw() {
         redFlames.splice(i, 1);
         if (player.health <= 0) {
           gameOver = true;
-          if (gameOverSound) gameOverSound.play();
-          if (bossMusic) bossMusic.stop();
         }
       } else if (redFlames[i].offscreen()) {
         redFlames.splice(i, 1);
@@ -653,15 +609,12 @@ function draw() {
       player.flashTimer = millis();
       if (player.health <= 0) {
         gameOver = true;
-        if (gameOverSound) gameOverSound.play();
-        if (bossMusic) bossMusic.stop();
       }
     }
 
     if (boss.health <= 0) {
       score += 50;
       gameOver = true;
-      if (bossMusic) bossMusic.stop();
     }
 
     fill(255);
@@ -711,3 +664,4 @@ function draw() {
 </script>
 </body>
 </html>
+
