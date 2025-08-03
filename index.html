@@ -46,6 +46,12 @@ let midgroundImg;
 let titleImg;
 let backgroundX = 0;
 let midgroundX = 0;
+let jumpSound;
+let collectSound;
+let gameOverSound;
+let themeMusic;
+let bossMusic;
+let flameSound;
 let scaleFactor = 1;
 let originalWidth = 800;
 let originalHeight = 400;
@@ -58,8 +64,6 @@ let keys = {};
 
 function preload() {
   try {
-    // Corrected image URLs based on your latest changes.
-    // Please ensure these filenames match your repository exactly, including case.
     playerRunSprites[0] = loadImage('./player_run1.png',
       () => console.log('Player run sprite 1 loaded'),
       () => console.error('Failed to load player run sprite 1')
@@ -101,6 +105,31 @@ function preload() {
     titleImg = loadImage('./Dungeons_Daisies_title.png',
       () => console.log('Title image loaded'),
       () => console.error('Failed to load title image')
+    );
+    // You'll need to download these sound files and put them in the same directory as this index.html
+    jumpSound = loadSound('./audio_jump.mp3',
+      () => console.log('Jump sound loaded'),
+      () => console.error('Failed to load jump sound')
+    );
+    collectSound = loadSound('./audio_collect.mp3',
+      () => console.log('Collect sound loaded'),
+      () => console.error('Failed to load collect sound')
+    );
+    gameOverSound = loadSound('./game_over.mp3',
+      () => console.log('Game over sound loaded'),
+      () => console.error('Failed to load game over sound')
+    );
+    themeMusic = loadSound('./ES_Dizzy_Dazzle.mp3',
+      () => console.log('Theme music loaded'),
+      () => console.error('Failed to load theme music')
+    );
+    bossMusic = loadSound('./ES_Ninja Skills - Ava Low.mp3',
+      () => console.log('Boss music loaded'),
+      () => console.error('Failed to load boss music')
+    );
+    flameSound = loadSound('./8-bit-fireball-81148.mp3',
+      () => console.log('Flame sound loaded'),
+      () => console.error('Failed to load flame sound')
     );
   } catch (e) {
     console.error('Preload error:', e);
@@ -149,10 +178,12 @@ class Player {
   jump() {
     this.vy = this.jumpForce;
     this.isJumping = true;
+    if (jumpSound) jumpSound.play();
   }
 
   attack() {
     greenFlames.push(new GreenFlame(this.x + this.w, this.y + this.h / 2));
+    if (flameSound) flameSound.play();
   }
 
   update() {
@@ -516,27 +547,32 @@ function draw() {
     player.update();
     player.show();
 
+    // The for loop is already correct, but I've added a null check for robustness
     for (let i = obstacles.length - 1; i >= 0; i--) {
-      obstacles[i].update();
-      obstacles[i].show();
-      if (obstacles[i].hits(player)) {
-        gameOver = true;
-      }
-      if (obstacles[i].offscreen()) {
-        obstacles.splice(i, 1);
-      }
+        if (obstacles[i]) {
+            obstacles[i].update();
+            obstacles[i].show();
+            if (obstacles[i].hits(player)) {
+                gameOver = true;
+            }
+            if (obstacles[i].offscreen()) {
+                obstacles.splice(i, 1);
+            }
+        }
     }
 
     for (let i = daisies.length - 1; i >= 0; i--) {
-      daisies[i].update();
-      daisies[i].show();
-      if (daisies[i].hits(player)) {
-        score += 10;
-        daisies.splice(i, 1);
-      }
-      if (daisies[i].offscreen()) {
-        daisies.splice(i, 1);
-      }
+        if (daisies[i]) {
+            daisies[i].update();
+            daisies[i].show();
+            if (daisies[i].hits(player)) {
+                score += 10;
+                daisies.splice(i, 1);
+            }
+            if (daisies[i].offscreen()) {
+                daisies.splice(i, 1);
+            }
+        }
     }
 
     fill(255);
@@ -662,5 +698,6 @@ function draw() {
 </script>
 </body>
 </html>
+
 
 
