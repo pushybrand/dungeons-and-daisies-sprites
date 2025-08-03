@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dungeons and Daisies Runner</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100vh;
-      overflow: hidden;
-      background-color: #000;
-    }
-    canvas {
-      display: block;
-      border: 2px solid #fff;
-    }
-  </style>
+  <title>Dungeons and Daisies Runner</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #000;
+    }
+    canvas {
+      display: block;
+      border: 2px solid #fff;
+    }
+  </style>
 </head>
 <body>
 <script>
@@ -57,617 +57,122 @@ let swordCollected = false;
 let keys = {};
 
 function preload() {
-  try {
-    playerRunSprites[0] = loadImage('./player_run1.png',
-      () => console.log('Player run sprite 1 loaded'),
-      () => console.error('Failed to load player run sprite 1')
-    );
-    playerRunSprites[1] = loadImage('./player_run2.png',
-      () => console.log('Player run sprite 2 loaded'),
-      () => console.error('Failed to load player run sprite 2'));
-    playerRunSwordSprites[0] = loadImage('./run_sword1.png',
-      () => console.log('Player run sword sprite 1 loaded'),
-      () => console.error('Failed to load player run sword sprite 1')
-    );
-    playerRunSwordSprites[1] = loadImage('./run_sword2.png',
-      () => console.log('Player run sword sprite 2 loaded'),
-      () => console.error('Failed to load player run sword sprite 2')
-    );
-    magicalSwordSprite = loadImage('./powerswordgif.png',
-      () => console.log('Magical sword loaded'),
-      () => console.error('Failed to load magical sword sprite')
-    );
-    greenFlameSprite = loadImage('./greenflame.png',
-      () => console.log('Green flame sprite loaded'),
-      () => console.error('Failed to load green flame sprite'));
-    boneSprite = loadImage('./skull.PNG',
-      () => console.log('Bone sprite loaded'),
-      () => console.error('Failed to load bone sprite')
-    );
-    daisySprite = loadImage('./daisy.PNG',
-      () => console.log('Daisy sprite loaded'),
-      () => console.error('Failed to load daisy sprite')
-    );
-    backgroundImg = loadImage('./background.png',
-      () => console.log('Background loaded'),
-      () => console.error('Failed to load background image')
-    );
-    midgroundImg = loadImage('./midground_chains.png',
-      () => console.log('Midground loaded'),
-      () => console.error('Failed to load midground image')
-    );
-    titleImg = loadImage('./Dungeons_Daisies_title.png',
-      () => console.log('Title image loaded'),
-      () => console.error('Failed to load title image')
-    );
-  } catch (e) {
-    console.error('Preload error:', e);
-  }
+  try {
+    playerRunSprites[0] = loadImage('./player_run1.png',
+      () => console.log('Player run sprite 1 loaded'),
+      () => console.error('Failed to load player run sprite 1')
+    );
+    playerRunSprites[1] = loadImage('./player_run2.png',
+      () => console.log('Player run sprite 2 loaded'),
+      () => console.error('Failed to load player run sprite 2'));
+    playerRunSwordSprites[0] = loadImage('./run_sword1.png',
+      () => console.log('Player run sword sprite 1 loaded'),
+      () => console.error('Failed to load player run sword sprite 1')
+    );
+    playerRunSwordSprites[1] = loadImage('./run_sword2.png',
+      () => console.log('Player run sword sprite 2 loaded'),
+      () => console.error('Failed to load player run sword sprite 2')
+    );
+    magicalSwordSprite = loadImage('./powerswordgif.png',
+      () => console.log('Magical sword loaded'),
+      () => console.error('Failed to load magical sword sprite')
+    );
+    greenFlameSprite = loadImage('./greenflame.png',
+      () => console.log('Green flame sprite loaded'),
+      () => console.error('Failed to load green flame sprite'));
+    boneSprite = loadImage('./skull.PNG',
+      () => console.log('Bone sprite loaded'),
+      () => console.error('Failed to load bone sprite')
+    );
+    daisySprite = loadImage('./daisy.PNG',
+      () => console.log('Daisy sprite loaded'),
+      () => console.error('Failed to load daisy sprite')
+    );
+    backgroundImg = loadImage('./background.png',
+      () => console.log('Background loaded'),
+      () => console.error('Failed to load background image')
+    );
+    midgroundImg = loadImage('./midground_chains.png',
+      () => console.log('Midground loaded'),
+      () => console.error('Failed to load midground image')
+    );
+    titleImg = loadImage('./Dungeons_Daisies_title.png',
+      () => console.log('Title image loaded'),
+      () => console.error('Failed to load title image')
+    );
+  } catch (e) {
+    console.error('Preload error:', e);
+  }
 }
 
 function setup() {
-  let canvasWidth = min(windowWidth, windowHeight * 2);
-  let canvasHeight = canvasWidth / 2;
-  scaleFactor = canvasWidth / originalWidth;
-  createCanvas(canvasWidth, canvasHeight);
-  groundY = height - 50 * scaleFactor;
-  player = new Player();
-  textFont('VT323');
-  titleStartTime = millis();
+  let canvasWidth = min(windowWidth, windowHeight * 2);
+  let canvasHeight = canvasWidth / 2;
+  scaleFactor = canvasWidth / originalWidth;
+  createCanvas(canvasWidth, canvasHeight);
+  groundY = height - 50 * scaleFactor;
+  player = new Player();
+  textFont('VT323');
+  titleStartTime = millis();
 }
 
 function windowResized() {
-  let canvasWidth = min(windowWidth, windowHeight * 2);
-  let canvasHeight = canvasWidth / 2;
-  scaleFactor = canvasWidth / originalWidth;
-  resizeCanvas(canvasWidth, canvasHeight);
-  groundY = height - 50 * scaleFactor;
-  if (player) player.adjustPosition();
+  let canvasWidth = min(windowWidth, windowHeight * 2);
+  let canvasHeight = canvasWidth / 2;
+  scaleFactor = canvasWidth / originalWidth;
+  resizeCanvas(canvasWidth, canvasHeight);
+  groundY = height - 50 * scaleFactor;
+  if (player) player.adjustPosition();
 }
 
 class Player {
-  constructor() {
-    this.w = 96 * scaleFactor;
-    this.h = 96 * scaleFactor;
-    this.hitboxW = 64 * scaleFactor;
-    this.hitboxH = 64 * scaleFactor;
-    this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
-    this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
-    this.x = 100 * scaleFactor;
-    this.y = groundY - this.h;
-    this.vy = 0;
-    this.gravity = 0.8 * scaleFactor;
-    this.jumpForce = -15 * scaleFactor;
-    this.isJumping = false;
-    this.speed = 5 * scaleFactor;
-    this.health = 100;
-    this.flashTimer = 0;
-  }
+  constructor() {
+    this.w = 96 * scaleFactor;
+    this.h = 96 * scaleFactor;
+    this.hitboxW = 64 * scaleFactor;
+    this.hitboxH = 64 * scaleFactor;
+    this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
+    this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
+    this.x = 100 * scaleFactor;
+    this.y = groundY - this.h;
+    this.vy = 0;
+    this.gravity = 0.8 * scaleFactor;
+    this.jumpForce = -15 * scaleFactor;
+    this.isJumping = false;
+    this.speed = 5 * scaleFactor;
+    this.health = 100;
+    this.flashTimer = 0;
+  }
 
-  jump() {
-    this.vy = this.jumpForce;
-    this.isJumping = true;
-  }
+  jump() {
+    this.vy = this.jumpForce;
+    this.isJumping = true;
+  }
 
-  attack() {
-    greenFlames.push(new GreenFlame(this.x + this.w, this.y + this.h / 2));
-  }
+  attack() {
+    greenFlames.push(new GreenFlame(this.x + this.w, this.y + this.h / 2));
+  }
 
-  update() {
-    this.vy += this.gravity;
-    this.y += this.vy;
-    if (this.y > groundY - this.h) {
-      this.y = groundY - this.h;
-      this.vy = 0;
-      this.isJumping = false;
-    }
-    if (gameState === "boss" || (score >= 200 && !swordCollected)) {
-      if (keys['ArrowLeft'] || keys['a']) this.x = max(0, this.x - this.speed);
-      if (keys['ArrowRight'] || keys['d']) this.x += this.speed;
-    }
-  }
+  update() {
+    this.vy += this.gravity;
+    this.y += this.vy;
+    if (this.y > groundY - this.h) {
+      this.y = groundY - this.h;
+      this.vy = 0;
+      this.isJumping = false;
+    }
+    if (gameState === "boss" || (score >= 200 && !swordCollected)) {
+      if (keys['ArrowLeft'] || keys['a']) this.x = max(0, this.x - this.speed);
+      if (keys['ArrowRight'] || keys['d']) this.x += this.speed;
+    }
+  }
 
-  show() {
-    if (millis() - this.flashTimer < 200 && frameCount % 4 < 2) return;
-    let sprites = swordCollected ? playerRunSwordSprites : playerRunSprites;
-    if (sprites[currentFrame]) {
-      image(sprites[currentFrame], this.x, this.y, this.w, this.h);
-    } else {
-      fill(0, 255, 0);
-      rect(this.x, this.y, this.w, this.h);
-    }
-  }
+  show() {
+    if (millis() - this.flashTimer < 200 && frameCount % 4 < 2) return;
+    let sprites = swordCollected ? playerRunSwordSprites : playerRunSprites;
+    if (sprites[currentFrame]) {
+      image(sprites[currentFrame], this.x, this.
 
-  adjustPosition() {
-    this.w = 96 * scaleFactor;
-    this.h = 96 * scaleFactor;
-    this.hitboxW = 64 * scaleFactor;
-    this.hitboxH = 64 * scaleFactor;
-    this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
-    this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
-    this.x = 100 * scaleFactor;
-    this.y = groundY - this.h;
-  }
-}
-
-class Sword {
-  constructor() {
-    this.w = 100 * scaleFactor;
-    this.h = 200 * scaleFactor;
-    this.x = width / 2 - this.w / 2;
-    this.baseY = 100 * scaleFactor;
-    this.y = this.baseY;
-  }
-
-  show() {
-    let hoverY = this.baseY + sin(frameCount * 0.1) * 10 * scaleFactor;
-    if (magicalSwordSprite) {
-      image(magicalSwordSprite, this.x, hoverY, this.w, this.h);
-    } else {
-      fill(0, 255, 255);
-      rect(this.x, hoverY, this.w, this.h);
-    }
-  }
-
-  hits(player) {
-    return player.x + player.w > this.x &&
-           player.x < this.x + this.w &&
-           player.y + player.h > this.y &&
-           player.y < this.y + this.h;
-  }
-}
-
-class GreenFlame {
-  constructor(x, y) {
-    this.w = 40 * scaleFactor;
-    this.h = 40 * scaleFactor;
-    this.x = x;
-    this.y = y;
-    this.speed = 8 * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
-  show() {
-    if (greenFlameSprite) {
-      image(greenFlameSprite, this.x, this.y, this.w, this.h);
-    } else {
-      fill(0, 255, 0);
-      ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-    }
-  }
-
-  hits(boss) {
-    return this.x + this.w > boss.x &&
-           this.x < boss.x + boss.w &&
-           this.y + this.h > boss.y &&
-           this.y < boss.y + boss.h;
-  }
-
-  offscreen() {
-    return this.x > width;
-  }
-}
-
-class RedFlame {
-  constructor(x, y) {
-    this.w = 20 * scaleFactor;
-    this.h = 20 * scaleFactor;
-    this.x = x;
-    this.y = y;
-    this.speed = -8 * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
-  show() {
-    fill(255, 0, 0);
-    ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-  }
-
-  hits(player) {
-    let playerHitboxX = player.x + player.hitboxOffsetX;
-    let playerHitboxY = player.y + player.hitboxOffsetY;
-    return playerHitboxX + player.hitboxW > this.x &&
-           playerHitboxX < this.x + this.w &&
-           playerHitboxY + player.hitboxH > this.y &&
-           playerHitboxY < this.y + this.h;
-  }
-
-  offscreen() {
-    return this.x + this.w < 0;
-  }
-}
-
-class Boss {
-  constructor() {
-    this.w = 150 * scaleFactor;
-    this.h = 150 * scaleFactor;
-    this.x = width - this.w;
-    this.y = groundY - this.h;
-    this.speed = -2 * scaleFactor;
-    this.health = 100;
-    this.attackTimer = 0;
-    this.pauseTimer = millis();
-    this.flashTimer = 0;
-  }
-
-  update() {
-    if (millis() - this.pauseTimer < 4000) return;
-    this.x += this.speed;
-    this.attackTimer++;
-    if (this.attackTimer >= 60) {
-      redFlames.push(new RedFlame(this.x, this.y + this.h / 2));
-      this.attackTimer = 0;
-    }
-  }
-
-  show() {
-    if (millis() - this.flashTimer < 200 && frameCount % 4 < 2) return;
-    fill(100);
-    stroke(255, 0, 0);
-    strokeWeight(2 * scaleFactor);
-    rect(this.x, this.y, this.w, this.h);
-  }
-
-  hits(player) {
-    let playerHitboxX = player.x + player.hitboxOffsetX;
-    let playerHitboxY = player.y + player.hitboxOffsetY;
-    return playerHitboxX + player.hitboxW > this.x &&
-           playerHitboxX < this.x + this.w &&
-           playerHitboxY + player.hitboxH > this.y &&
-           playerHitboxY < this.y + this.h;
-  }
-}
-
-class Obstacle {
-  constructor() {
-    this.w = 48 * scaleFactor;
-    this.h = 48 * scaleFactor;
-    this.hitboxW = 32 * scaleFactor;
-    this.hitboxH = 32 * scaleFactor;
-    this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
-    this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
-    this.x = width;
-    this.y = groundY - this.h;
-    this.speed = baseSpeed * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
-  show() {
-    if (boneSprite) {
-      image(boneSprite, this.x, this.y, this.w, this.h);
-    } else {
-      fill(150);
-      stroke(0);
-      strokeWeight(2 * scaleFactor);
-      rect(this.x, this.y, this.w, this.h);
-    }
-  }
-
-  hits(player) {
-    let playerHitboxX = player.x + player.hitboxOffsetX;
-    let playerHitboxY = player.y + player.hitboxOffsetY;
-    let thisHitboxX = this.x + this.hitboxOffsetX;
-    let thisHitboxY = this.y + this.hitboxOffsetY;
-    return playerHitboxX + player.hitboxW > thisHitboxX &&
-           playerHitboxX < thisHitboxX + this.hitboxW &&
-           playerHitboxY + player.hitboxH > thisHitboxY &&
-           playerHitboxY < thisHitboxY + this.hitboxH;
-  }
-
-  offscreen() {
-    return this.x + this.w < 0;
-  }
-}
-
-class Daisy {
-  constructor() {
-    this.w = 48 * scaleFactor;
-    this.h = 48 * scaleFactor;
-    this.x = width;
-    this.y = random(150 * scaleFactor, groundY - this.h);
-    this.speed = baseSpeed * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
-  show() {
-    if (daisySprite) {
-      image(daisySprite, this.x, this.y, this.w, this.h);
-    } else {
-      fill(255, 255, 0);
-      stroke(0);
-      strokeWeight(2 * scaleFactor);
-      ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-    }
-  }
-
-  hits(player) {
-    return player.x + player.w > this.x &&
-           player.x < this.x + this.w &&
-           player.y + player.h > this.y &&
-           player.y < this.y + this.h;
-  }
-
-  offscreen() {
-    return this.x + this.w < 0;
-  }
-}
-
-function resetGame() {
-  player = new Player();
-  obstacles = [];
-  daisies = [];
-  score = 0;
-  gameOver = false;
-  currentFrame = 0;
-  baseSpeed = -6;
-  backgroundX = 0;
-  midgroundX = 0;
-  swordCollected = false;
-  sword = null;
-  boss = null;
-  greenFlames = [];
-  redFlames = [];
-  gameState = "playing";
-  if (restartButton) {
-    restartButton.remove();
-    restartButton = null;
-  }
-}
-
-function keyPressed() {
-  if (key === ' ' && (gameState === "title" || gameState === "playing" || gameState === "boss") && !player.isJumping) {
-    if (gameState === "title") {
-      gameState = "playing";
-    } else {
-      player.jump();
-    }
-  }
-  if (keyCode === ENTER && swordCollected && gameState === "boss") {
-    player.attack();
-  }
-  if (gameState === "boss" || (score >= 200 && !swordCollected)) {
-    keys[key.toLowerCase()] = true;
-    keys[key] = true;
-  }
-  if (gameOver && key === ' ') {
-    resetGame();
-  }
-}
-
-function keyReleased() {
-  if (gameState === "boss" || (score >= 200 && !swordCollected)) {
-    keys[key.toLowerCase()] = false;
-    keys[key] = false;
-  }
-}
-
-function touchStarted() {
-  if (gameState === "title") {
-    gameState = "playing";
-  } else if ((gameState === "playing" || gameState === "boss") && !player.isJumping) {
-    player.jump();
-  } else if (gameOver) {
-    resetGame();
-  }
-  return false;
-}
-
-function draw() {
-  if (gameState === "title") {
-    background(0);
-    if (titleImg) {
-      image(titleImg, 0, 0, width, height);
-    } else {
-      fill(255);
-      textSize(32 * scaleFactor);
-      textAlign(CENTER, CENTER);
-      text("Dungeons and Daisies Runner\nPress to Start", width / 2, height / 2);
-    }
-    return;
-  }
-
-  background(0);
-  if (backgroundImg) {
-    image(backgroundImg, backgroundX, 0, width, height);
-    image(backgroundImg, backgroundX + width, 0, width, height);
-  }
-  if (midgroundImg) {
-    image(midgroundImg, midgroundX, 0, width, height);
-    image(midgroundImg, midgroundX + width, 0, width, height);
-  }
-
-  if (gameState === "playing") {
-    backgroundX += baseSpeed * scaleFactor;
-    midgroundX += baseSpeed * scaleFactor;
-    if (backgroundX <= -width) backgroundX += width;
-    if (midgroundX <= -width) midgroundX += width;
-
-    if (frameCount % frameDelay === 0) {
-      currentFrame = (currentFrame + 1) % (swordCollected ? playerRunSwordSprites.length : playerRunSprites.length);
-    }
-
-    if (frameCount % 300 === 0) {
-      baseSpeed -= 0.5;
-      obstacles.forEach(o => o.speed = baseSpeed * scaleFactor);
-      daisies.forEach(d => d.speed = baseSpeed * scaleFactor);
-    }
-
-    if (frameCount % 60 === 0 && score < 200) {
-      obstacles.push(new Obstacle());
-    }
-    if (frameCount % 90 === 0 && score < 200) {
-      daisies.push(new Daisy());
-    }
-
-    player.update();
-    player.show();
-
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-        if (obstacles[i]) {
-            obstacles[i].update();
-            obstacles[i].show();
-            if (obstacles[i].hits(player)) {
-                gameOver = true;
-            }
-            if (obstacles[i].offscreen()) {
-                obstacles.splice(i, 1);
-            }
-        }
-    }
-
-    for (let i = daisies.length - 1; i >= 0; i--) {
-        if (daisies[i]) {
-            daisies[i].update();
-            daisies[i].show();
-            if (daisies[i].hits(player)) {
-                score += 10;
-                daisies.splice(i, 1);
-            }
-            if (daisies[i].offscreen()) {
-                daisies.splice(i, 1);
-            }
-        }
-    }
-
-    fill(255);
-    textSize(24 * scaleFactor);
-    textAlign(LEFT);
-    text("Score: " + score, 10 * scaleFactor, 30 * scaleFactor);
-
-    if (score >= 200 && !sword) {
-      sword = new Sword();
-    }
-
-    if (sword) {
-      sword.show();
-      if (sword.hits(player)) {
-        swordCollected = true;
-        sword = null;
-        boss = new Boss();
-        gameState = "boss";
-      }
-    }
-  }
-
-  if (gameState === "boss") {
-    backgroundX += baseSpeed * scaleFactor;
-    midgroundX += baseSpeed * scaleFactor;
-    if (backgroundX <= -width) backgroundX += width;
-    if (midgroundX <= -width) midgroundX += width;
-
-    if (frameCount % frameDelay === 0 && (keys['ArrowLeft'] || keys['a'] || keys['ArrowRight'] || keys['d']) && swordCollected) {
-      currentFrame = (currentFrame + 1) % playerRunSwordSprites.length;
-    }
-
-    player.update();
-    player.show();
-
-    boss.update();
-    boss.show();
-
-    for (let i = greenFlames.length - 1; i >= 0; i--) {
-      if (greenFlames[i]) {
-        greenFlames[i].update();
-        greenFlames[i].show();
-        if (greenFlames[i].hits(boss)) {
-          boss.health -= 10;
-          boss.flashTimer = millis();
-          greenFlames.splice(i, 1);
-        } else if (greenFlames[i].offscreen()) {
-          greenFlames.splice(i, 1);
-        }
-      }
-    }
-
-    for (let i = redFlames.length - 1; i >= 0; i--) {
-      if (redFlames[i]) {
-        redFlames[i].update();
-        redFlames[i].show();
-        if (redFlames[i].hits(player)) {
-          player.health -= 10;
-          player.flashTimer = millis();
-          redFlames.splice(i, 1);
-          if (player.health <= 0) {
-            gameOver = true;
-          }
-        } else if (redFlames[i].offscreen()) {
-          redFlames.splice(i, 1);
-        }
-      }
-    }
-
-    if (boss.hits(player)) {
-      player.health -= 20;
-      player.flashTimer = millis();
-      if (player.health <= 0) {
-        gameOver = true;
-      }
-    }
-
-    if (boss.health <= 0) {
-      score += 50;
-      gameOver = true;
-    }
-
-    fill(255);
-    textSize(24 * scaleFactor);
-    textAlign(LEFT);
-    text("Player HP: " + player.health, 10 * scaleFactor, 30 * scaleFactor);
-    fill(255, 0, 0);
-    rect(10 * scaleFactor, 40 * scaleFactor, player.health * 2 * scaleFactor, 10 * scaleFactor);
-    fill(255);
-    textAlign(CENTER);
-    text("Boss HP: " + boss.health, width / 2, 30 * scaleFactor);
-    fill(255, 0, 0);
-    rect(width / 2 - 100 * scaleFactor, 40 * scaleFactor, boss.health * 2 * scaleFactor, 10 * scaleFactor);
-  }
-
-  if (gameOver) {
-    fill(0, 150);
-    rect(0, 0, width, height);
-    fill(255);
-    textSize(48 * scaleFactor);
-    textAlign(CENTER, CENTER);
-    let message = boss && boss.health <= 0 ? "Boss Defeated!" : "Game Over";
-    text(message, width / 2, height / 2 - 20 * scaleFactor);
-    textSize(24 * scaleFactor);
-    text("Score: " + score + "\nPress Space to Restart", width / 2, height / 2 + 20 * scaleFactor);
-
-    if (!restartButton) {
-      restartButton = createButton('Restart');
-      restartButton.position(width / 2 - 40 * scaleFactor, height / 2 + 50 * scaleFactor);
-      restartButton.style('font-family', 'VT323');
-      restartButton.style('font-size', (20 * scaleFactor) + 'px');
-      restartButton.mousePressed(() => {
-        resetGame();
-        restartButton.remove();
-        restartButton = null;
-      });
-      restartButton.mouseOver(() => isHoveringRestart = true);
-      restartButton.mouseOut(() => isHoveringRestart = false);
-    }
-    if (isHoveringRestart) {
-      restartButton.style('background-color', '#555');
-    } else {
-      restartButton.style('background-color', '#333');
-    }
-  }
-}
-</script>
-</body>
-</html>
 
 
 
