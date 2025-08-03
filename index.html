@@ -58,7 +58,7 @@ let keys = {};
 
 function preload() {
   try {
-    // Corrected image URLs based on common file naming conventions.
+    // Corrected image URLs based on your latest changes.
     // Please ensure these filenames match your repository exactly, including case.
     playerRunSprites[0] = loadImage('./player_run1.png',
       () => console.log('Player run sprite 1 loaded'),
@@ -149,12 +149,10 @@ class Player {
   jump() {
     this.vy = this.jumpForce;
     this.isJumping = true;
-    // Removed sound function for now
   }
 
   attack() {
     greenFlames.push(new GreenFlame(this.x + this.w, this.y + this.h / 2));
-    // Removed sound function for now
   }
 
   update() {
@@ -664,4 +662,5 @@ function draw() {
 </script>
 </body>
 </html>
+
 
