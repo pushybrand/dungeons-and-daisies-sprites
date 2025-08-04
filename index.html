@@ -44,6 +44,7 @@ let daisySprite;
 let backgroundImg;
 let midgroundImg;
 let titleImg;
+let song;
 let backgroundX = 0;
 let midgroundX = 0;
 let scaleFactor = 1;
@@ -73,6 +74,7 @@ function preload() {
       () => console.log('Player run sword sprite 2 loaded'),
       () => console.error('Failed to load player run sword sprite 2')
     );
+    // REVERTED: Changed the sword image back to the original PNG as requested.
     magicalSwordSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/powerswordgif.png',
       () => console.log('Magical sword loaded'),
       () => console.error('Failed to load magical sword sprite')
@@ -99,6 +101,10 @@ function preload() {
     titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png',
       () => console.log('Title image loaded'),
       () => console.error('Failed to load title image')
+    );
+    song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav',
+        () => console.log('Background music loaded'),
+        () => console.error('Failed to load background music')
     );
   } catch (e) {
     console.error('Preload error:', e);
@@ -134,7 +140,6 @@ class Player {
     this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
     this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
     this.x = 100 * scaleFactor;
-    // Adjusted y position to line up with the ground
     this.y = groundY - this.h + 20 * scaleFactor;
     this.vy = 0;
     this.gravity = 0.8 * scaleFactor;
@@ -187,13 +192,13 @@ class Player {
     this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
     this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
     this.x = 100 * scaleFactor;
-    // Adjusted y position in resize handler
     this.y = groundY - this.h + 20 * scaleFactor;
   }
 }
 
 class Sword {
   constructor() {
+    // REVERTED: Changed dimensions back to match the original PNG.
     this.w = 100 * scaleFactor;
     this.h = 200 * scaleFactor;
     this.x = width / 2 - this.w / 2;
@@ -335,7 +340,6 @@ class Obstacle {
     this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
     this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
     this.x = width;
-    // Adjusted y position to line up with the ground
     this.y = groundY - this.h + 20 * scaleFactor;
     this.speed = baseSpeed * scaleFactor;
   }
@@ -427,30 +431,30 @@ function resetGame() {
     restartButton.remove();
     restartButton = null;
   }
-  loop(); // Restart the draw loop
+  loop(); 
 }
 
 function keyPressed() {
-  // Handle space bar for jumping and restarting
+  if (!player) return;
+
   if (key === ' ') {
     if (gameOver) {
       resetGame();
-    } else if ((gameState === "title" || gameState === "playing" || gameState === "boss") && !player.isJumping) {
-      if (gameState === "title") {
-        gameState = "playing";
-      } else {
-        player.jump();
+    } else if (gameState === "title") {
+      gameState = "playing";
+      if (song && song.isLoaded() && !song.isPlaying()) {
+        song.loop();
       }
+    } else if ((gameState === "playing" || gameState === "boss") && !player.isJumping) {
+      player.jump();
     }
-    return false; // BUG FIX: Prevent default browser action (scrolling) for space bar
+    return false; 
   }
 
-  // Handle Enter key for attacking
   if (keyCode === ENTER && swordCollected && gameState === "boss") {
     player.attack();
   }
 
-  // Handle movement keys
   if (gameState === "boss" || (score >= 200 && !swordCollected)) {
     keys[key.toLowerCase()] = true;
     keys[key] = true;
@@ -458,6 +462,8 @@ function keyPressed() {
 }
 
 function keyReleased() {
+  if (!player) return;
+  
   if (gameState === "boss" || (score >= 200 && !swordCollected)) {
     keys[key.toLowerCase()] = false;
     keys[key] = false;
@@ -465,8 +471,13 @@ function keyReleased() {
 }
 
 function touchStarted() {
+  if (!player) return;
+
   if (gameState === "title") {
     gameState = "playing";
+    if (song && song.isLoaded() && !song.isPlaying()) {
+        song.loop();
+    }
   } else if ((gameState === "playing" || gameState === "boss") && !player.isJumping) {
     player.jump();
   } else if (gameOver) {
@@ -476,7 +487,6 @@ function touchStarted() {
 }
 
 function draw() {
-  // Title screen with background and title logo
   if (gameState === "title") {
     background(0);
     if (backgroundImg) {
@@ -493,7 +503,6 @@ function draw() {
       textAlign(CENTER, CENTER);
       text("Dungeons and Daisies Runner\nPress to Start", width / 2, height / 2);
     }
-    // Only show restart button after game over
     if (gameOver) {
       if (!restartButton) {
         restartButton = createButton('Restart');
@@ -513,7 +522,6 @@ function draw() {
     return;
   }
 
-  // Draw background for playing and boss states
   background(0);
   if (backgroundImg) {
     image(backgroundImg, backgroundX, 0, width, height);
@@ -524,7 +532,6 @@ function draw() {
     image(midgroundImg, midgroundX + width, 0, width, height);
   }
 
-  // Update scrolling only in the "playing" state
   if (gameState === "playing") {
     backgroundX += baseSpeed * scaleFactor;
     midgroundX += baseSpeed * scaleFactor;
@@ -557,7 +564,6 @@ function draw() {
         obstacles[i].show();
         if (obstacles[i].hits(player)) {
           gameOver = true;
-          // BUG FIX: Removed return statement that was preventing game over screen from appearing
         } else if (obstacles[i].offscreen()) {
           obstacles.splice(i, 1);
         }
@@ -598,8 +604,6 @@ function draw() {
   }
 
   if (gameState === "boss") {
-    // Background no longer scrolls in the boss fight
-    // Scrolling logic has been moved inside the "playing" state check
 
     if (frameCount % frameDelay === 0 && (keys['ArrowLeft'] || keys['a'] || keys['ArrowRight'] || keys['d']) && swordCollected) {
       currentFrame = (currentFrame + 1) % playerRunSwordSprites.length;
@@ -668,7 +672,6 @@ function draw() {
     rect(width / 2 - 100 * scaleFactor, 40 * scaleFactor, boss.health * 2 * scaleFactor, 10 * scaleFactor);
   }
 
-  // Game over screen logic
   if (gameOver) {
     fill(0, 150);
     rect(0, 0, width, height);
@@ -680,7 +683,6 @@ function draw() {
     textSize(24 * scaleFactor);
     text("Score: " + score + "\nPress Space to Restart", width / 2, height / 2 + 20 * scaleFactor);
     
-    // Create and manage the restart button
     if (!restartButton) {
       restartButton = createButton('Restart');
       restartButton.position(width / 2 - 40 * scaleFactor, height / 2 + 50 * scaleFactor);
@@ -695,12 +697,14 @@ function draw() {
     } else {
       restartButton.style('background-color', '#333');
     }
-    noLoop(); // BUG FIX: Stop the draw loop when the game is over
+    noLoop(); 
   }
 }
 </script>
 </body>
 </html>
+
+
 
 
 
