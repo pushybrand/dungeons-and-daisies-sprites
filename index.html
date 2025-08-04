@@ -427,25 +427,33 @@ function resetGame() {
     restartButton.remove();
     restartButton = null;
   }
+  loop(); // Restart the draw loop
 }
 
 function keyPressed() {
-  if (key === ' ' && (gameState === "title" || gameState === "playing" || gameState === "boss") && !player.isJumping) {
-    if (gameState === "title") {
-      gameState = "playing";
-    } else {
-      player.jump();
+  // Handle space bar for jumping and restarting
+  if (key === ' ') {
+    if (gameOver) {
+      resetGame();
+    } else if ((gameState === "title" || gameState === "playing" || gameState === "boss") && !player.isJumping) {
+      if (gameState === "title") {
+        gameState = "playing";
+      } else {
+        player.jump();
+      }
     }
+    return false; // BUG FIX: Prevent default browser action (scrolling) for space bar
   }
+
+  // Handle Enter key for attacking
   if (keyCode === ENTER && swordCollected && gameState === "boss") {
     player.attack();
   }
+
+  // Handle movement keys
   if (gameState === "boss" || (score >= 200 && !swordCollected)) {
     keys[key.toLowerCase()] = true;
     keys[key] = true;
-  }
-  if (gameOver && key === ' ') {
-    resetGame();
   }
 }
 
@@ -549,7 +557,7 @@ function draw() {
         obstacles[i].show();
         if (obstacles[i].hits(player)) {
           gameOver = true;
-          return; // Stop the game loop immediately on hit
+          // BUG FIX: Removed return statement that was preventing game over screen from appearing
         } else if (obstacles[i].offscreen()) {
           obstacles.splice(i, 1);
         }
@@ -687,11 +695,14 @@ function draw() {
     } else {
       restartButton.style('background-color', '#333');
     }
+    noLoop(); // BUG FIX: Stop the draw loop when the game is over
   }
 }
 </script>
 </body>
 </html>
+
+
 
 
 
