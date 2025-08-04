@@ -76,6 +76,7 @@ let backgroundImg;
 let midgroundImg;
 let titleImg;
 let song;
+let jumpSound, daisySound; // NEW: Sound effect variables
 let backgroundX = 0;
 let midgroundX = 0;
 let scaleFactor = 1;
@@ -138,6 +139,15 @@ function preload() {
     song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav',
         () => console.log('Background music loaded'),
         () => console.error('Failed to load background music')
+    );
+    // NEW: Load sound effects
+    jumpSound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3',
+        () => console.log('Jump sound loaded'),
+        () => console.error('Failed to load jump sound')
+    );
+    daisySound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3',
+        () => console.log('Daisy sound loaded'),
+        () => console.error('Failed to load daisy sound')
     );
   } catch (e) {
     console.error('Preload error:', e);
@@ -214,6 +224,10 @@ class Player {
   }
 
   jump() {
+    // NEW: Play jump sound
+    if (jumpSound && jumpSound.isLoaded()) {
+        jumpSound.play();
+    }
     this.vy = this.jumpForce;
     this.isJumping = true;
   }
@@ -535,7 +549,6 @@ function keyReleased() {
 function touchStarted(event) {
   if (!player) return;
 
-  // NEW: If touch is on a control button, let its own event listener handle it.
   if (event.target.classList.contains('control-btn')) {
       return false;
   }
@@ -571,7 +584,7 @@ function manageControls() {
 }
 
 function draw() {
-  manageControls(); // NEW: Manage visibility of on-screen controls every frame
+  manageControls(); 
 
   if (gameState === "title") {
     background(0);
@@ -618,7 +631,7 @@ function draw() {
     image(midgroundImg, midgroundX + width, 0, width, height);
   }
 
-  if (gameState === "playing" && score < 200) { // Stop scrolling when sword appears
+  if (gameState === "playing" && score < 200) { 
     backgroundX += baseSpeed * scaleFactor;
     midgroundX += baseSpeed * scaleFactor;
     if (backgroundX <= -width) backgroundX += width;
@@ -664,6 +677,10 @@ function draw() {
         daisies[i].show();
         if (daisies[i].hits(player)) {
           score += 10;
+          // NEW: Play daisy collection sound
+          if (daisySound && daisySound.isLoaded()) {
+              daisySound.play();
+          }
           daisies.splice(i, 1);
         } else if (daisies[i].offscreen()) {
           daisies.splice(i, 1);
@@ -791,6 +808,7 @@ function draw() {
 </script>
 </body>
 </html>
+
 
 
 
