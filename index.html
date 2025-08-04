@@ -13,14 +13,45 @@
       height: 100vh;
       overflow: hidden;
       background-color: #000;
+      -webkit-user-select: none; /* Safari */
+      -ms-user-select: none; /* IE 10+ */
+      user-select: none; /* Standard syntax */
     }
     canvas {
       display: block;
       border: 2px solid #fff;
     }
+    /* NEW: Styles for on-screen controls */
+    .control-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: rgba(128, 128, 128, 0.5);
+        border: 2px solid white;
+        color: white;
+        font-size: 24px;
+        margin: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .control-btn:active {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
   </style>
 </head>
 <body>
+<!-- NEW: On-screen control elements -->
+<div id="controls-container" style="position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; z-index: 10; pointer-events: none;">
+    <div id="move-controls" style="display: none; pointer-events: auto;">
+        <button id="left-btn" class="control-btn">◀</button>
+        <button id="right-btn" class="control-btn">▶</button>
+    </div>
+    <div id="attack-control" style="display: none; pointer-events: auto;">
+        <button id="fire-btn" class="control-btn">🔥</button>
+    </div>
+</div>
+
 <script>
 let player;
 let obstacles = [];
@@ -57,6 +88,9 @@ let titleStartTime;
 let swordCollected = false;
 let keys = {};
 
+// NEW: Variables for on-screen controls
+let leftBtn, rightBtn, fireBtn, moveControls, attackControl;
+
 function preload() {
   try {
     playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png',
@@ -74,7 +108,6 @@ function preload() {
       () => console.log('Player run sword sprite 2 loaded'),
       () => console.error('Failed to load player run sword sprite 2')
     );
-    // REVERTED: Changed the sword image back to the original PNG as requested.
     magicalSwordSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/powerswordgif.png',
       () => console.log('Magical sword loaded'),
       () => console.error('Failed to load magical sword sprite')
@@ -120,7 +153,37 @@ function setup() {
   player = new Player();
   textFont('VT323');
   titleStartTime = millis();
+
+  // NEW: Setup for on-screen controls
+  setupControls();
 }
+
+function setupControls() {
+    moveControls = document.getElementById('move-controls');
+    attackControl = document.getElementById('attack-control');
+    leftBtn = document.getElementById('left-btn');
+    rightBtn = document.getElementById('right-btn');
+    fireBtn = document.getElementById('fire-btn');
+
+    // Left Button Events
+    leftBtn.addEventListener('mousedown', () => keys['ArrowLeft'] = true);
+    leftBtn.addEventListener('mouseup', () => keys['ArrowLeft'] = false);
+    leftBtn.addEventListener('mouseleave', () => keys['ArrowLeft'] = false);
+    leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowLeft'] = true; });
+    leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
+
+    // Right Button Events
+    rightBtn.addEventListener('mousedown', () => keys['ArrowRight'] = true);
+    rightBtn.addEventListener('mouseup', () => keys['ArrowRight'] = false);
+    rightBtn.addEventListener('mouseleave', () => keys['ArrowRight'] = false);
+    rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowRight'] = true; });
+    rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
+
+    // Fire Button Events
+    fireBtn.addEventListener('mousedown', () => { if (player) player.attack(); });
+    fireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if (player) player.attack(); });
+}
+
 
 function windowResized() {
   let canvasWidth = min(windowWidth, windowHeight * 2);
@@ -169,7 +232,7 @@ class Player {
     }
     if (gameState === "boss" || (score >= 200 && !swordCollected)) {
       if (keys['ArrowLeft'] || keys['a']) this.x = max(0, this.x - this.speed);
-      if (keys['ArrowRight'] || keys['d']) this.x += this.speed;
+      if (keys['ArrowRight'] || keys['d']) this.x = min(width - this.w, this.x + this.speed);
     }
   }
 
@@ -198,7 +261,6 @@ class Player {
 
 class Sword {
   constructor() {
-    // REVERTED: Changed dimensions back to match the original PNG.
     this.w = 100 * scaleFactor;
     this.h = 200 * scaleFactor;
     this.x = width / 2 - this.w / 2;
@@ -470,8 +532,13 @@ function keyReleased() {
   }
 }
 
-function touchStarted() {
+function touchStarted(event) {
   if (!player) return;
+
+  // NEW: If touch is on a control button, let its own event listener handle it.
+  if (event.target.classList.contains('control-btn')) {
+      return false;
+  }
 
   if (gameState === "title") {
     gameState = "playing";
@@ -486,7 +553,26 @@ function touchStarted() {
   return false;
 }
 
+function manageControls() {
+    const showMovement = (score >= 200 && !swordCollected) || gameState === "boss";
+    const showAttack = gameState === "boss" && swordCollected;
+
+    if (showMovement) {
+        moveControls.style.display = 'flex';
+    } else {
+        moveControls.style.display = 'none';
+    }
+
+    if (showAttack) {
+        attackControl.style.display = 'block';
+    } else {
+        attackControl.style.display = 'none';
+    }
+}
+
 function draw() {
+  manageControls(); // NEW: Manage visibility of on-screen controls every frame
+
   if (gameState === "title") {
     background(0);
     if (backgroundImg) {
@@ -532,17 +618,19 @@ function draw() {
     image(midgroundImg, midgroundX + width, 0, width, height);
   }
 
-  if (gameState === "playing") {
+  if (gameState === "playing" && score < 200) { // Stop scrolling when sword appears
     backgroundX += baseSpeed * scaleFactor;
     midgroundX += baseSpeed * scaleFactor;
     if (backgroundX <= -width) backgroundX += width;
     if (midgroundX <= -width) midgroundX += width;
+  }
 
+  if (gameState === "playing") {
     if (frameCount % frameDelay === 0) {
       currentFrame = (currentFrame + 1) % (swordCollected ? playerRunSwordSprites.length : playerRunSprites.length);
     }
 
-    if (frameCount % 300 === 0) {
+    if (frameCount % 300 === 0 && score < 200) {
       baseSpeed -= 0.5;
       obstacles.forEach(o => o.speed = baseSpeed * scaleFactor);
       daisies.forEach(d => d.speed = baseSpeed * scaleFactor);
@@ -588,7 +676,7 @@ function draw() {
     textAlign(LEFT);
     text("Score: " + score, 10 * scaleFactor, 30 * scaleFactor);
 
-    if (score >= 200 && !sword) {
+    if (score >= 200 && !sword && !swordCollected) {
       sword = new Sword();
     }
 
@@ -703,6 +791,8 @@ function draw() {
 </script>
 </body>
 </html>
+
+
 
 
 
