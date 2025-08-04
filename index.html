@@ -372,16 +372,39 @@ class Boss {
     this.h = 150 * scaleFactor;
     this.x = width - this.w;
     this.y = groundY - this.h;
-    this.speed = -2 * scaleFactor;
+    this.speed = 2 * scaleFactor; // Speed magnitude
     this.health = 100;
     this.attackTimer = 0;
-    this.pauseTimer = millis();
     this.flashTimer = 0;
+    // NEW: Boss movement logic
+    this.moveTimer = 0;
+    this.direction = -1; // Start by moving left (towards player)
   }
 
   update() {
-    if (millis() - this.pauseTimer < 4000) return;
-    this.x += this.speed;
+    // NEW: Randomize movement direction every 2 seconds (120 frames)
+    this.moveTimer++;
+    if (this.moveTimer > 120) {
+        this.direction = random([-1, 1, 0]); // -1 for left, 1 for right, 0 for still
+        this.moveTimer = 0;
+    }
+
+    // Apply movement based on direction
+    this.x += this.speed * this.direction;
+
+    // Boundary checks to keep the boss on screen
+    if (this.x < width / 2) { // Don't go past the middle of the screen
+        this.x = width / 2;
+        this.direction = 1; // Force move right
+        this.moveTimer = 0;
+    }
+    if (this.x + this.w > width) { // Don't go off the right edge
+        this.x = width - this.w;
+        this.direction = -1; // Force move left
+        this.moveTimer = 0;
+    }
+    
+    // Attack logic remains the same
     this.attackTimer++;
     if (this.attackTimer >= 60) {
       redFlames.push(new RedFlame(this.x, this.y + this.h / 2));
@@ -638,7 +661,8 @@ function draw() {
     if (midgroundX <= -width) midgroundX += width;
   }
 
-  if (gameState === "playing") {
+  // This block handles the main runner part AND the sword collection part
+  if (gameState === "playing" || (score >= 200 && !swordCollected)) {
     if (frameCount % frameDelay === 0) {
       currentFrame = (currentFrame + 1) % (swordCollected ? playerRunSwordSprites.length : playerRunSprites.length);
     }
@@ -677,7 +701,6 @@ function draw() {
         daisies[i].show();
         if (daisies[i].hits(player)) {
           score += 10;
-          // NEW: Play daisy collection sound
           if (daisySound && daisySound.isLoaded()) {
               daisySound.play();
           }
@@ -724,8 +747,9 @@ function draw() {
       if (greenFlames[i]) {
         greenFlames[i].update();
         greenFlames[i].show();
+        // UPDATED: Boss health depletes slower
         if (greenFlames[i].hits(boss)) {
-          boss.health -= 10;
+          boss.health -= 5;
           boss.flashTimer = millis();
           greenFlames.splice(i, 1);
         } else if (greenFlames[i].offscreen()) {
@@ -751,7 +775,8 @@ function draw() {
       }
     }
 
-    if (boss.hits(player)) {
+    // UPDATED: Player gets a 1-second cooldown after being hit by the boss
+    if (boss.hits(player) && millis() - player.flashTimer > 1000) {
       player.health -= 20;
       player.flashTimer = millis();
       if (player.health <= 0) {
@@ -808,6 +833,7 @@ function draw() {
 </script>
 </body>
 </html>
+
 
 
 
