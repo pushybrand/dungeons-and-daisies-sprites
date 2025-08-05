@@ -95,7 +95,6 @@ let nextObstacleFrame = 0;
 let nextDaisyFrame = 0;
 
 let torchLayer;
-// NEW: Variable to control the torch's radius for the expansion effect
 let torchRadius;
 const INITIAL_TORCH_RADIUS = 250;
 
@@ -135,7 +134,6 @@ function setup() {
   setupControls();
   
   torchLayer = createGraphics(width, height);
-  // NEW: Initialize torch radius
   torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
   
   setNextSpawns();
@@ -178,7 +176,6 @@ function windowResized() {
   groundY = height - 50 * scaleFactor;
   if (player) player.adjustPosition();
   torchLayer = createGraphics(width, height);
-  // NEW: Adjust torch radius on resize if not currently expanding
   if (score < 200) {
       torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
   }
@@ -504,7 +501,6 @@ function resetGame() {
     restartButton.remove();
     restartButton = null;
   }
-  // NEW: Reset torch radius on game reset
   torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
   setNextSpawns();
   loop(); 
@@ -584,9 +580,8 @@ function manageControls() {
 }
 
 function drawPixelatedTorchEffect() {
-    // UPDATED: Use fill() and rect() for a reliable semi-transparent overlay
     torchLayer.clear();
-    torchLayer.fill(0, 220); // Black with high opacity for the dark areas
+    torchLayer.fill(0, 220);
     torchLayer.noStroke();
     torchLayer.rect(0, 0, width, height);
 
@@ -594,9 +589,9 @@ function drawPixelatedTorchEffect() {
 
     let playerCenterX = player.x + player.w / 2;
     let playerCenterY = player.y + player.h / 2;
-    // UPDATED: Use the dynamic torchRadius variable
     let lightRadius = torchRadius;
-    let pixelSize = 16 * scaleFactor; 
+    // UPDATED: Smaller pixel size for a finer effect
+    let pixelSize = 8 * scaleFactor; 
 
     torchLayer.ellipse(playerCenterX, playerCenterY, player.w * 1.5, player.w * 1.5);
 
@@ -691,11 +686,10 @@ function draw() {
       }
     }
 
-    // UPDATED: Logic for torch expansion and sword spawning
     if (score >= 200 && !sword && !swordCollected) {
-        if (torchRadius < width) { // Expand the torch until it fills the screen
+        if (torchRadius < width) {
             torchRadius += 15 * scaleFactor;
-        } else { // Once expanded, create the sword
+        } else {
             sword = new Sword();
         }
     }
@@ -758,7 +752,6 @@ function draw() {
     }
   }
   
-  // UPDATED: Draw the torch effect only before the sword is created
   if (gameState !== 'title' && !sword && !swordCollected) {
       drawPixelatedTorchEffect();
   }
@@ -814,6 +807,8 @@ function draw() {
 </script>
 </body>
 </html>
+
+
 
 
 
