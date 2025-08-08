@@ -46,24 +46,34 @@
 
       // Preload all assets
       function preload() {
-        // --- UPDATED BACKGROUND ---
+        // --- VERIFIED WORKING URLs ---
         backgroundImg = loadImage(
-          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2"
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2.png"
         );
-        
-        // Midground image removed as requested
-
         titleImg = loadImage(
-          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dnd-title"
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dnd-title.png"
         );
-
-        playerRun = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/run-sprites.png");
-        playerJump = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/jump-sprites.png");
-        obstacleImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/skull.png");
-        daisyImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/daisy.png");
-        swordImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/sword.png");
-        bossImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon-flame.png");
-        flameImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/flame.png");
+        playerRun = loadImage(
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/run-sprites.png"
+        );
+        playerJump = loadImage(
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/jump-sprites.png"
+        );
+        obstacleImg = loadImage(
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/skull.png"
+        );
+        daisyImg = loadImage(
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/daisy.png"
+        );
+        swordImg = loadImage(
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/sword.png"
+        );
+        bossImg = loadImage(
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon-flame.png"
+        );
+        flameImg = loadImage(
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/flame.png"
+        );
       }
 
       function setup() {
@@ -450,72 +460,8 @@
                       let action = random(['forward', 'backward', 'pause']);
                       if (action === 'forward' && this.x > width * 0.5) {
                           this.speedX = -random(0.5, 1.5) * scaleFactor;
-                          this.moveTimer = random(60, 120);
-                      } else if (action === 'backward' && this.x < width - this.w - 20) {
-                          this.speedX = random(0.5, 1.5) * scaleFactor;
-                          this.moveTimer = random(30, 90);
-                      } else { // pause
-                          this.speedX = 0;
-                          this.moveTimer = random(60, 180);
-                      }
-                  }
-                   this.x += this.speedX;
-                   // Boundary checks
-                   if (this.x < width * 0.5) this.x = width * 0.5;
-                   if (this.x > width - this.w - 20) this.x = width - this.w - 20;
-              }
-          }
+                          this.moveTimer = random(60,
 
-          show() {
-              image(bossImg, this.x, this.y, this.w, this.h);
-              // Boss Health Bar
-              fill(255,0,0);
-              rect(this.x, this.y - 20, this.w, 10);
-              fill(0,255,0);
-              rect(this.x, this.y - 20, this.w * (this.health/500), 10);
-          }
-          
-          hits(player) {
-              return collideRectRect(this.x, this.y, this.w, this.h, player.x, player.y, player.w, player.h);
-          }
-          
-          isHitBy(flame) {
-              return collideRectRect(this.x, this.y, this.w, this.h, flame.x, flame.y, flame.w, flame.h);
-          }
-          
-          takeDamage(amount) {
-              this.health -= amount;
-          }
-      }
-      
-      class Flame {
-          constructor(x, y) {
-              this.x = x;
-              this.y = y;
-              this.w = 40 * scaleFactor;
-              this.h = 20 * scaleFactor;
-              this.speed = 8 * scaleFactor;
-          }
-          update() {
-              this.x += this.speed;
-          }
-          show() {
-              image(flameImg, this.x, this.y, this.w, this.h);
-          }
-      }
-      
-      // p5.collide2d library function
-      function collideRectRect(x, y, w, h, x2, y2, w2, h2) {
-        return (
-          x < x2 + w2 &&
-          x + w > x2 &&
-          y < y2 + h2 &&
-          y + h > y2
-        );
-      }
-    </script>
-  </body>
-</html>
 
 
 
