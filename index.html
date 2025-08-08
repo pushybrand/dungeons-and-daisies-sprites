@@ -1,812 +1,522 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>Dungeons and Daisies Runner</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100vh;
-      overflow: hidden;
-      background-color: #000;
-      -webkit-user-select: none; /* Safari */
-      -ms-user-select: none; /* IE 10+ */
-      user-select: none; /* Standard syntax */
-    }
-    canvas {
-      display: block;
-      border: 2px solid #fff;
-    }
-    /* Styles for on-screen controls */
-    .control-btn {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background-color: rgba(128, 128, 128, 0.5);
-        border: 2px solid white;
-        color: white;
-        font-size: 24px;
-        margin: 10px;
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dungeons & Daisies Runner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <style>
+      body {
         display: flex;
         justify-content: center;
         align-items: center;
-    }
-    .control-btn:active {
-        background-color: rgba(255, 255, 255, 0.5);
-    }
-  </style>
-</head>
-<body>
-<!-- On-screen control elements -->
-<div id="controls-container" style="position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; z-index: 10; pointer-events: none;">
-    <div id="move-controls" style="display: none; pointer-events: auto;">
-        <button id="left-btn" class="control-btn">◀</button>
-        <button id="right-btn" class="control-btn">▶</button>
-    </div>
-    <div id="attack-control" style="display: none; pointer-events: auto;">
-        <button id="fire-btn" class="control-btn">🔥</button>
-    </div>
-</div>
-
-<script>
-let player;
-let obstacles = [];
-let daisies = [];
-let score = 0;
-let gameOver = false;
-let groundY;
-let baseSpeed = -6;
-let boss;
-let sword;
-let greenFlames = [];
-let redFlames = [];
-let playerRunSprites = [];
-let playerRunSwordSprites = [];
-let magicalSwordSprite;
-let greenFlameSprite;
-let currentFrame = 0;
-let frameDelay = 4;
-let boneSprite;
-let daisySprite;
-let backgroundImg;
-let midgroundImg;
-let titleImg;
-let song;
-let jumpSound, daisySound;
-let backgroundX = 0;
-let midgroundX = 0;
-let scaleFactor = 1;
-let originalWidth = 800;
-let originalHeight = 400;
-let restartButton = null;
-let isHoveringRestart = false;
-let gameState = "title";
-let titleStartTime;
-let swordCollected = false;
-let keys = {};
-
-let leftBtn, rightBtn, fireBtn, moveControls, attackControl;
-
-let nextObstacleFrame = 0;
-let nextDaisyFrame = 0;
-
-let torchLayer;
-let torchRadius;
-const INITIAL_TORCH_RADIUS = 250;
-
-function preload() {
-  try {
-    playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png');
-    playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png');
-    playerRunSwordSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword1.png');
-    playerRunSwordSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword2.png');
-    magicalSwordSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/powerswordgif.png');
-    greenFlameSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/greenflame.png');
-    boneSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/skull.PNG');
-    daisySprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/daisy.PNG');
-    backgroundImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/background.png');
-    midgroundImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/midground_chains.png');
-    titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png');
-    song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav');
-    jumpSound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3');
-    daisySound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3');
-  } catch (e) {
-    console.error('Preload error:', e);
-  }
-}
-
-function setup() {
-  let canvasWidth = min(windowWidth, windowHeight * 2);
-  let canvasHeight = canvasWidth / 2;
-  scaleFactor = canvasWidth / originalWidth;
-  let p5canvas = createCanvas(canvasWidth, canvasHeight);
-  p5canvas.parent(document.body);
-
-  groundY = height - 50 * scaleFactor;
-  player = new Player();
-  textFont('VT323');
-  titleStartTime = millis();
-
-  setupControls();
-  
-  torchLayer = createGraphics(width, height);
-  torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
-  
-  setNextSpawns();
-}
-
-function setNextSpawns() {
-    nextObstacleFrame = frameCount + random(60, 120);
-    nextDaisyFrame = frameCount + random(90, 180);
-}
-
-function setupControls() {
-    moveControls = document.getElementById('move-controls');
-    attackControl = document.getElementById('attack-control');
-    leftBtn = document.getElementById('left-btn');
-    rightBtn = document.getElementById('right-btn');
-    fireBtn = document.getElementById('fire-btn');
-
-    leftBtn.addEventListener('mousedown', () => keys['ArrowLeft'] = true);
-    leftBtn.addEventListener('mouseup', () => keys['ArrowLeft'] = false);
-    leftBtn.addEventListener('mouseleave', () => keys['ArrowLeft'] = false);
-    leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowLeft'] = true; });
-    leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
-
-    rightBtn.addEventListener('mousedown', () => keys['ArrowRight'] = true);
-    rightBtn.addEventListener('mouseup', () => keys['ArrowRight'] = false);
-    rightBtn.addEventListener('mouseleave', () => keys['ArrowRight'] = false);
-    rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowRight'] = true; });
-    rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
-
-    fireBtn.addEventListener('mousedown', () => { if (player) player.attack(); });
-    fireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if (player) player.attack(); });
-}
-
-
-function windowResized() {
-  let canvasWidth = min(windowWidth, windowHeight * 2);
-  let canvasHeight = canvasWidth / 2;
-  scaleFactor = canvasWidth / originalWidth;
-  resizeCanvas(canvasWidth, canvasHeight);
-  groundY = height - 50 * scaleFactor;
-  if (player) player.adjustPosition();
-  torchLayer = createGraphics(width, height);
-  if (score < 200) {
-      torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
-  }
-}
-
-class Player {
-  constructor() {
-    this.w = 96 * scaleFactor;
-    this.h = 96 * scaleFactor;
-    this.hitboxW = 64 * scaleFactor;
-    this.hitboxH = 64 * scaleFactor;
-    this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
-    this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
-    this.x = 100 * scaleFactor;
-    this.y = groundY - this.h + 20 * scaleFactor;
-    this.vy = 0;
-    this.gravity = 0.8 * scaleFactor;
-    this.jumpForce = -15 * scaleFactor;
-    this.isJumping = false;
-    this.speed = 5 * scaleFactor;
-    this.health = 100;
-    this.flashTimer = 0;
-  }
-
-  jump() {
-    if (jumpSound && jumpSound.isLoaded()) {
-        jumpSound.play();
-    }
-    this.vy = this.jumpForce;
-    this.isJumping = true;
-  }
-
-  attack() {
-    greenFlames.push(new GreenFlame(this.x + this.w, this.y + this.h / 2));
-  }
-
-  update() {
-    this.vy += this.gravity;
-    this.y += this.vy;
-    if (this.y > groundY - this.h + 20 * scaleFactor) {
-      this.y = groundY - this.h + 20 * scaleFactor;
-      this.vy = 0;
-      this.isJumping = false;
-    }
-    if (gameState === "boss" || (score >= 200 && !swordCollected)) {
-      if (keys['ArrowLeft'] || keys['a']) this.x = max(0, this.x - this.speed);
-      if (keys['ArrowRight'] || keys['d']) this.x = min(width - this.w, this.x + this.speed);
-    }
-  }
-
-  show() {
-    if (millis() - this.flashTimer < 200 && frameCount % 4 < 2) return;
-    let sprites = swordCollected ? playerRunSwordSprites : playerRunSprites;
-    if (sprites[currentFrame]) {
-      image(sprites[currentFrame], this.x, this.y, this.w, this.h);
-    } else {
-      fill(0, 255, 0);
-      rect(this.x, this.y, this.w, this.h);
-    }
-  }
-
-  adjustPosition() {
-    this.w = 96 * scaleFactor;
-    this.h = 96 * scaleFactor;
-    this.hitboxW = 64 * scaleFactor;
-    this.hitboxH = 64 * scaleFactor;
-    this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
-    this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
-    this.x = 100 * scaleFactor;
-    this.y = groundY - this.h + 20 * scaleFactor;
-  }
-}
-
-class Sword {
-  constructor() {
-    this.w = 100 * scaleFactor;
-    this.h = 200 * scaleFactor;
-    this.x = width / 2 - this.w / 2;
-    this.baseY = 100 * scaleFactor;
-    this.y = this.baseY;
-  }
-
-  show() {
-    let hoverY = this.baseY + sin(frameCount * 0.1) * 10 * scaleFactor;
-    if (magicalSwordSprite) {
-      image(magicalSwordSprite, this.x, hoverY, this.w, this.h);
-    } else {
-      fill(0, 255, 255);
-      rect(this.x, hoverY, this.w, this.h);
-    }
-  }
-
-  hits(player) {
-    return player.x + player.w > this.x &&
-           player.x < this.x + this.w &&
-           player.y + player.h > this.y &&
-           player.y < this.y + this.h;
-  }
-}
-
-class GreenFlame {
-  constructor(x, y) {
-    this.w = 40 * scaleFactor;
-    this.h = 40 * scaleFactor;
-    this.x = x;
-    this.y = y;
-    this.speed = 8 * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
-  show() {
-    if (greenFlameSprite) {
-      image(greenFlameSprite, this.x, this.y, this.w, this.h);
-    } else {
-      fill(0, 255, 0);
-      ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-    }
-  }
-
-  hits(boss) {
-    return this.x + this.w > boss.x &&
-           this.x < boss.x + boss.w &&
-           this.y + this.h > boss.y &&
-           this.y < boss.y + boss.h;
-  }
-
-  offscreen() {
-    return this.x > width;
-  }
-}
-
-class RedFlame {
-  constructor(x, y) {
-    this.w = 20 * scaleFactor;
-    this.h = 20 * scaleFactor;
-    this.x = x;
-    this.y = y;
-    this.speed = -8 * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
-  show() {
-    fill(255, 0, 0);
-    ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-  }
-
-  hits(player) {
-    let playerHitboxX = player.x + player.hitboxOffsetX;
-    let playerHitboxY = player.y + player.hitboxOffsetY;
-    return playerHitboxX + player.hitboxW > this.x &&
-           playerHitboxX < this.x + this.w &&
-           playerHitboxY + player.hitboxH > this.y &&
-           playerHitboxY < this.y + this.h;
-  }
-
-  offscreen() {
-    return this.x + this.w < 0;
-  }
-}
-
-class Boss {
-  constructor() {
-    this.w = 150 * scaleFactor;
-    this.h = 150 * scaleFactor;
-    this.x = width - this.w;
-    this.y = groundY - this.h;
-    this.speed = 2 * scaleFactor;
-    this.health = 100;
-    this.attackTimer = 0;
-    this.flashTimer = 0;
-    this.moveTimer = 0;
-    this.direction = -1;
-  }
-
-  update() {
-    this.moveTimer++;
-    if (this.moveTimer > 120) {
-        this.direction = random([-1, 1, 0]);
-        this.moveTimer = 0;
-    }
-
-    this.x += this.speed * this.direction;
-
-    if (this.x < width / 2) {
-        this.x = width / 2;
-        this.direction = 1;
-        this.moveTimer = 0;
-    }
-    if (this.x + this.w > width) {
-        this.x = width - this.w;
-        this.direction = -1;
-        this.moveTimer = 0;
-    }
-    
-    this.attackTimer++;
-    if (this.attackTimer >= 60) {
-      redFlames.push(new RedFlame(this.x, this.y + this.h / 2));
-      this.attackTimer = 0;
-    }
-  }
-
-  show() {
-    if (millis() - this.flashTimer < 200 && frameCount % 4 < 2) return;
-    fill(100);
-    stroke(255, 0, 0);
-    strokeWeight(2 * scaleFactor);
-    rect(this.x, this.y, this.w, this.h);
-  }
-
-  hits(player) {
-    let playerHitboxX = player.x + player.hitboxOffsetX;
-    let playerHitboxY = player.y + player.hitboxOffsetY;
-    return playerHitboxX + player.hitboxW > this.x &&
-           playerHitboxX < this.x + this.w &&
-           playerHitboxY + player.hitboxH > this.y &&
-           playerHitboxY < this.y + this.h;
-  }
-}
-
-class Obstacle {
-  constructor() {
-    this.w = 48 * scaleFactor;
-    this.h = 48 * scaleFactor;
-    this.hitboxW = 32 * scaleFactor;
-    this.hitboxH = 32 * scaleFactor;
-    this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
-    this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
-    this.x = width;
-    this.y = groundY - this.h + 20 * scaleFactor;
-    this.speed = baseSpeed * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
-  show() {
-    if (boneSprite) {
-      image(boneSprite, this.x, this.y, this.w, this.h);
-    } else {
-      fill(150);
-      stroke(0);
-      strokeWeight(2 * scaleFactor);
-      rect(this.x, this.y, this.w, this.h);
-    }
-  }
-
-  hits(player) {
-    let playerHitboxX = player.x + player.hitboxOffsetX;
-    let playerHitboxY = player.y + player.hitboxOffsetY;
-    let thisHitboxX = this.x + this.hitboxOffsetX;
-    let thisHitboxY = this.y + this.hitboxOffsetY;
-    return playerHitboxX + player.hitboxW > thisHitboxX &&
-           playerHitboxX < thisHitboxX + this.hitboxW &&
-           playerHitboxY + player.hitboxH > thisHitboxY &&
-           playerHitboxY < thisHitboxY + this.hitboxH;
-  }
-
-  offscreen() {
-    return this.x + this.w < 0;
-  }
-}
-
-class Daisy {
-  constructor() {
-    this.w = 48 * scaleFactor;
-    this.h = 48 * scaleFactor;
-    this.x = width;
-    this.y = random(150 * scaleFactor, groundY - this.h);
-    this.speed = baseSpeed * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
-  show() {
-    if (daisySprite) {
-      image(daisySprite, this.x, this.y, this.w, this.h);
-    } else {
-      fill(255, 255, 0);
-      stroke(0);
-      strokeWeight(2 * scaleFactor);
-      ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-    }
-  }
-
-  hits(player) {
-    return player.x + player.w > this.x &&
-           player.x < this.x + this.w &&
-           player.y + player.h > this.y &&
-           player.y < this.y + this.h;
-  }
-
-  offscreen() {
-    return this.x + this.w < 0;
-  }
-}
-
-function resetGame() {
-  player = new Player();
-  obstacles = [];
-  daisies = [];
-  score = 0;
-  gameOver = false;
-  currentFrame = 0;
-  baseSpeed = -6;
-  backgroundX = 0;
-  midgroundX = 0;
-  swordCollected = false;
-  sword = null;
-  boss = null;
-  greenFlames = [];
-  redFlames = [];
-  gameState = "playing";
-  if (restartButton) {
-    restartButton.remove();
-    restartButton = null;
-  }
-  torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
-  setNextSpawns();
-  loop(); 
-}
-
-function keyPressed() {
-  if (!player) return;
-
-  if (key === ' ') {
-    if (gameOver) {
-      resetGame();
-    } else if (gameState === "title") {
-      gameState = "playing";
-      if (song && song.isLoaded() && !song.isPlaying()) {
-        song.loop();
+        height: 100vh;
+        background-color: #1a1a1a;
+        margin: 0;
+        overflow: hidden;
       }
-    } else if ((gameState === "playing" || gameState === "boss") && !player.isJumping) {
-      player.jump();
-    }
-    return false; 
-  }
+      canvas {
+        border: 2px solid #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // Game Variables
+      let player;
+      let obstacles = [];
+      let daisies = [];
+      let score = 0;
+      let gameOver = false;
+      let gameState = "title"; // "title", "playing", "boss"
 
-  if (keyCode === ENTER && swordCollected && gameState === "boss") {
-    player.attack();
-  }
+      // Image and Asset Variables
+      let playerRun, playerJump, obstacleImg, daisyImg, swordImg, bossImg, flameImg;
+      let backgroundImg, titleImg;
+      let backgroundX = 0;
 
-  if (gameState === "boss" || (score >= 200 && !swordCollected)) {
-    keys[key.toLowerCase()] = true;
-    keys[key] = true;
-  }
-}
+      // Game Mechanics
+      let groundY;
+      let baseSpeed = 2;
+      let scaleFactor = 2;
+      let restartButton;
+      let sword;
+      let boss;
+      let flames = [];
 
-function keyReleased() {
-  if (!player) return;
-  
-  if (gameState === "boss" || (score >= 200 && !swordCollected)) {
-    keys[key.toLowerCase()] = false;
-    keys[key] = false;
-  }
-}
+      // Preload all assets
+      function preload() {
+        // --- UPDATED BACKGROUND ---
+        backgroundImg = loadImage(
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2"
+        );
+        
+        // Midground image removed as requested
 
-function touchStarted(event) {
-  if (!player) return;
+        titleImg = loadImage(
+          "https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dnd-title"
+        );
 
-  if (event.target.classList.contains('control-btn')) {
-      return false;
-  }
+        playerRun = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/run-sprites.png");
+        playerJump = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/jump-sprites.png");
+        obstacleImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/skull.png");
+        daisyImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/daisy.png");
+        swordImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/sword.png");
+        bossImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon-flame.png");
+        flameImg = loadImage("https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/flame.png");
+      }
 
-  if (gameState === "title") {
-    gameState = "playing";
-    if (song && song.isLoaded() && !song.isPlaying()) {
-        song.loop();
-    }
-  } else if ((gameState === "playing" || gameState === "boss") && !player.isJumping) {
-    player.jump();
-  } else if (gameOver) {
-    resetGame();
-  }
-  return false;
-}
+      function setup() {
+        createCanvas(480 * scaleFactor, 270 * scaleFactor);
+        groundY = height - 40 * scaleFactor;
+        resetGame();
+      }
 
-function manageControls() {
-    const showMovement = (score >= 200 && !swordCollected) || gameState === "boss";
-    const showAttack = gameState === "boss" && swordCollected;
+      function resetGame() {
+        player = new Player();
+        obstacles = [];
+        daisies = [];
+        flames = [];
+        score = 0;
+        gameOver = false;
+        gameState = "playing";
+        sword = null;
+        boss = null;
+        backgroundX = 0;
+        loop(); // Ensure the loop is running
+      }
 
-    if (showMovement) {
-        moveControls.style.display = 'flex';
-    } else {
-        moveControls.style.display = 'none';
-    }
+      function draw() {
+        // Title Screen
+        if (gameState === "title") {
+          background(0);
+           if (backgroundImg) {
+            image(backgroundImg, backgroundX, 0, width, height);
+            image(backgroundImg, backgroundX + width, 0, width, height);
+          }
+          if (titleImg) {
+            image(titleImg, 0, 0, width, height);
+          } else {
+            fill(255);
+            textSize(32 * scaleFactor);
+            textAlign(CENTER, CENTER);
+            text("Dungeons and Daisies Runner\nPress to Start", width / 2, height / 2);
+          }
+          return;
+        }
+        
+        if (gameOver) return; // Stop drawing if game is over
 
-    if (showAttack) {
-        attackControl.style.display = 'block';
-    } else {
-        attackControl.style.display = 'none';
-    }
-}
-
-function drawPixelatedTorchEffect() {
-    torchLayer.clear();
-    torchLayer.fill(0, 220);
-    torchLayer.noStroke();
-    torchLayer.rect(0, 0, width, height);
-
-    torchLayer.erase();
-
-    let playerCenterX = player.x + player.w / 2;
-    let playerCenterY = player.y + player.h / 2;
-    let lightRadius = torchRadius;
-    // UPDATED: Smaller pixel size for a finer effect
-    let pixelSize = 8 * scaleFactor; 
-
-    torchLayer.ellipse(playerCenterX, playerCenterY, player.w * 1.5, player.w * 1.5);
-
-    for (let x = playerCenterX - lightRadius; x < playerCenterX + lightRadius; x += pixelSize) {
-        for (let y = playerCenterY - lightRadius; y < playerCenterY + lightRadius; y += pixelSize) {
-            let d = dist(x, y, playerCenterX, playerCenterY);
-            if (d < lightRadius) {
-                torchLayer.rect(x, y, pixelSize, pixelSize);
+        // --- BACKGROUND ---
+        // Draw the scrolling background
+        if (gameState === "playing" || (gameState === "boss" && boss && boss.x > width * 0.75)) {
+            backgroundX -= baseSpeed * scaleFactor;
+            if (backgroundX <= -width) {
+                backgroundX = 0;
             }
         }
-    }
-    
-    torchLayer.noErase();
-    image(torchLayer, 0, 0);
-}
-
-
-function draw() {
-  manageControls(); 
-
-  if (gameState === "title") {
-    background(0);
-    if (backgroundImg) image(backgroundImg, backgroundX, 0, width, height);
-    if (midgroundImg) image(midgroundImg, midgroundX, 0, width, height);
-    if (titleImg) image(titleImg, 0, 0, width, height);
-    else {
-      fill(255);
-      textSize(32 * scaleFactor);
-      textAlign(CENTER, CENTER);
-      text("Dungeons and Daisies Runner\nPress to Start", width / 2, height / 2);
-    }
-    return;
-  }
-
-  background(0);
-  if (backgroundImg) {
-    image(backgroundImg, backgroundX, 0, width, height);
-    image(backgroundImg, backgroundX + width, 0, width, height);
-  }
-  if (midgroundImg) {
-    image(midgroundImg, midgroundX, 0, width, height);
-    image(midgroundImg, midgroundX + width, 0, width, height);
-  }
-
-  if (gameState === "playing" && score < 200) { 
-    backgroundX += baseSpeed * scaleFactor;
-    midgroundX += baseSpeed * scaleFactor;
-    if (backgroundX <= -width) backgroundX += width;
-    if (midgroundX <= -width) midgroundX += width;
-  }
-
-  if (gameState === "playing" || (score >= 200 && !swordCollected)) {
-    if (frameCount % frameDelay === 0) {
-      currentFrame = (currentFrame + 1) % (swordCollected ? playerRunSwordSprites.length : playerRunSprites.length);
-    }
-
-    if (frameCount % 300 === 0 && score < 200) {
-      baseSpeed -= 0.5;
-    }
-    
-    if (frameCount > nextObstacleFrame && score < 200) {
-        obstacles.push(new Obstacle());
-        nextObstacleFrame = frameCount + random(50, 100) / (abs(baseSpeed)/6);
-    }
-    if (frameCount > nextDaisyFrame && score < 200) {
-        daisies.push(new Daisy());
-        nextDaisyFrame = frameCount + random(80, 150);
-    }
-
-    player.update();
-    player.show();
-
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-      obstacles[i].update();
-      obstacles[i].show();
-      if (obstacles[i].hits(player)) {
-        gameOver = true;
-      } else if (obstacles[i].offscreen()) {
-        obstacles.splice(i, 1);
-      }
-    }
-
-    for (let i = daisies.length - 1; i >= 0; i--) {
-      daisies[i].update();
-      daisies[i].show();
-      if (daisies[i].hits(player)) {
-        score += 10;
-        if (daisySound && daisySound.isLoaded()) daisySound.play();
-        daisies.splice(i, 1);
-      } else if (daisies[i].offscreen()) {
-        daisies.splice(i, 1);
-      }
-    }
-
-    if (score >= 200 && !sword && !swordCollected) {
-        if (torchRadius < width) {
-            torchRadius += 15 * scaleFactor;
-        } else {
-            sword = new Sword();
+        image(backgroundImg, backgroundX, 0, width, height);
+        image(backgroundImg, backgroundX + width, 0, width, height);
+        
+        // --- GAME LOGIC ---
+        if (gameState === "playing") {
+          handlePlayingState();
+        } else if (gameState === "boss") {
+          handleBossState();
         }
-    }
-
-    if (sword) {
-      sword.show();
-      if (sword.hits(player)) {
-        swordCollected = true;
-        sword = null;
-        boss = new Boss();
-        gameState = "boss";
+        
+        // Draw Score
+        fill(255);
+        textSize(20 * scaleFactor);
+        textAlign(RIGHT, TOP);
+        text("Score: " + score, width - 10, 10);
       }
-    }
-  }
 
-  if (gameState === "boss") {
-    if (frameCount % frameDelay === 0 && (keys['ArrowLeft'] || keys['a'] || keys['ArrowRight'] || keys['d']) && swordCollected) {
-      currentFrame = (currentFrame + 1) % playerRunSwordSprites.length;
-    }
+      function handlePlayingState() {
+        player.update();
+        player.show();
 
-    player.update();
-    player.show();
-    boss.update();
-    boss.show();
+        // Handle Obstacles
+        if (frameCount % 90 === 0) {
+          obstacles.push(new Obstacle());
+        }
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          obstacles[i].update();
+          obstacles[i].show();
+          if (player.hits(obstacles[i])) {
+            triggerGameOver();
+          }
+          if (obstacles[i].isOffscreen()) {
+            obstacles.splice(i, 1);
+          }
+        }
 
-    for (let i = greenFlames.length - 1; i >= 0; i--) {
-      greenFlames[i].update();
-      greenFlames[i].show();
-      if (greenFlames[i].hits(boss)) {
-        boss.health -= 5;
-        boss.flashTimer = millis();
-        greenFlames.splice(i, 1);
-      } else if (greenFlames[i].offscreen()) {
-        greenFlames.splice(i, 1);
+        // Handle Daisies
+        if (frameCount % 60 === 0) {
+          daisies.push(new Daisy());
+        }
+        for (let i = daisies.length - 1; i >= 0; i--) {
+          daisies[i].update();
+          daisies[i].show();
+          if (player.collects(daisies[i])) {
+            score += 10;
+            daisies.splice(i, 1);
+          } else if (daisies[i].isOffscreen()) {
+            daisies.splice(i, 1);
+          }
+        }
+
+        // Check for Boss Trigger
+        if (score >= 200 && !sword) {
+          sword = new Sword();
+        }
+        if (sword) {
+          sword.update();
+          sword.show();
+          if (player.collects(sword)) {
+            gameState = "boss";
+            boss = new Boss();
+            obstacles = []; // Clear remaining obstacles
+            daisies = []; // Clear remaining daisies
+            sword = null;
+          }
+        }
       }
-    }
 
-    for (let i = redFlames.length - 1; i >= 0; i--) {
-      redFlames[i].update();
-      redFlames[i].show();
-      if (redFlames[i].hits(player)) {
-        player.health -= 10;
-        player.flashTimer = millis();
-        redFlames.splice(i, 1);
-        if (player.health <= 0) gameOver = true;
-      } else if (redFlames[i].offscreen()) {
-        redFlames.splice(i, 1);
+      function handleBossState() {
+        player.update();
+        player.show();
+
+        boss.update();
+        boss.show();
+
+        if (boss.hits(player) && !player.isInvincible) {
+           player.takeDamage(25);
+        }
+        
+        // Handle flames
+        for (let i = flames.length - 1; i >= 0; i--) {
+            flames[i].update();
+            flames[i].show();
+            if(boss.isHitBy(flames[i])) {
+                boss.takeDamage(10);
+                flames.splice(i,1);
+            }
+        }
+        
+        if (player.health <= 0) {
+            triggerGameOver();
+        }
+        if (boss.health <= 0) {
+           triggerWin();
+        }
       }
-    }
 
-    if (boss.hits(player) && millis() - player.flashTimer > 1000) {
-      player.health -= 20;
-      player.flashTimer = millis();
-      if (player.health <= 0) gameOver = true;
-    }
+      function triggerGameOver() {
+        gameOver = true;
+        noLoop(); // Stop the draw loop
+        
+        // Display Game Over screen
+        fill(0, 150);
+        rect(0, 0, width, height);
+        fill(255);
+        textSize(48 * scaleFactor);
+        textAlign(CENTER, CENTER);
+        text("GAME OVER", width / 2, height / 2 - 20 * scaleFactor);
 
-    if (boss.health <= 0) {
-      score += 50;
-      gameOver = true;
-    }
-  }
-  
-  if (gameState !== 'title' && !sword && !swordCollected) {
-      drawPixelatedTorchEffect();
-  }
+        restartButton = createButton('Restart');
+        restartButton.position(width / 2 - (restartButton.width / 2), height / 2 + 50 * scaleFactor);
+        restartButton.style('font-size', (20 * scaleFactor) + 'px');
+        restartButton.style('padding', '10px 20px');
+        restartButton.mousePressed(() => {
+          restartButton.remove();
+          gameState = "title";
+          gameOver = false;
+          loop(); // Restart the draw loop to show title
+        });
+      }
 
-  if (gameState === 'boss') {
-    fill(255);
-    textSize(24 * scaleFactor);
-    textAlign(LEFT);
-    text("Player HP: " + player.health, 10 * scaleFactor, 30 * scaleFactor);
-    fill(255, 0, 0);
-    rect(10 * scaleFactor, 40 * scaleFactor, player.health * 2 * scaleFactor, 10 * scaleFactor);
-    fill(255);
-    textAlign(CENTER);
-    text("Boss HP: " + boss.health, width / 2, 30 * scaleFactor);
-    fill(255, 0, 0);
-    rect(width / 2 - 100 * scaleFactor, 40 * scaleFactor, boss.health * 2 * scaleFactor, 10 * scaleFactor);
-  } else if (gameState === 'playing' || (score >= 200 && !swordCollected)) {
-      fill(255);
-      textSize(24 * scaleFactor);
-      textAlign(LEFT);
-      text("Score: " + score, 10 * scaleFactor, 30 * scaleFactor);
-  }
+       function triggerWin() {
+        gameOver = true;
+        noLoop();
+        fill(0, 150);
+        rect(0, 0, width, height);
+        fill(255, 215, 0); // Gold color for win
+        textSize(48 * scaleFactor);
+        textAlign(CENTER, CENTER);
+        text("YOU WIN!", width / 2, height / 2 - 40 * scaleFactor);
+        textSize(24 * scaleFactor);
+        text("You have proven your worth, Forerunner.", width / 2, height / 2 + 20 * scaleFactor);
 
+        // Here you would add the button/link to claim WL
+        let claimButton = createButton('Claim WL Spot');
+        claimButton.position(width/2 - (claimButton.width/2), height / 2 + 80 * scaleFactor);
+        claimButton.style('font-size', (20 * scaleFactor) + 'px');
+        claimButton.style('padding', '10px 20px');
+        claimButton.mousePressed(() => {
+            // This is where you would link to your Typeform/Google Form
+            window.open('https://your-whitelist-form-link.com', '_blank');
+        });
+      }
 
-  if (gameOver) {
-    fill(0, 150);
-    rect(0, 0, width, height);
-    fill(255);
-    textSize(48 * scaleFactor);
-    textAlign(CENTER, CENTER);
-    let message = boss && boss.health <= 0 ? "Boss Defeated!" : "Game Over";
-    text(message, width / 2, height / 2 - 20 * scaleFactor);
-    textSize(24 * scaleFactor);
-    text("Score: " + score + "\nPress Space to Restart", width / 2, height / 2 + 20 * scaleFactor);
-    
-    if (!restartButton) {
-      restartButton = createButton('Restart');
-      restartButton.position(width / 2 - 40 * scaleFactor, height / 2 + 50 * scaleFactor);
-      restartButton.style('font-family', 'VT323');
-      restartButton.style('font-size', (20 * scaleFactor) + 'px');
-      restartButton.mousePressed(resetGame);
-      restartButton.mouseOver(() => isHoveringRestart = true);
-      restartButton.mouseOut(() => isHoveringRestart = false);
-    }
-    if (isHoveringRestart) {
-      restartButton.style('background-color', '#555');
-    } else {
-      restartButton.style('background-color', '#333');
-    }
-    noLoop(); 
-  }
-}
-</script>
-</body>
+      function keyPressed() {
+        if (gameState === "title" && (key === ' ' || keyCode === 32)) {
+          resetGame();
+        }
+        
+        if (key === ' ' || keyCode === UP_ARROW) {
+          if (gameState === "playing" || gameState === "boss") {
+            player.jump();
+          }
+        }
+        
+        if (gameState === "boss" && (key === 'x' || key === 'X')) {
+             flames.push(new Flame(player.x + player.w, player.y + player.h/2));
+        }
+      }
+      
+      function mousePressed() {
+         if (gameState === "title") {
+          resetGame();
+        }
+      }
+
+      // --- CLASSES ---
+
+      class Player {
+        constructor() {
+          this.w = 50 * scaleFactor;
+          this.h = 70 * scaleFactor;
+          this.x = this.w;
+          this.y = groundY - this.h;
+          this.vy = 0;
+          this.gravity = 0.8 * scaleFactor;
+          this.sprite = playerRun;
+          this.frame = 0;
+          this.frameCount = 8;
+          this.frameWidth = 96;
+          this.frameHeight = 96;
+          
+          this.health = 100;
+          this.isInvincible = false;
+          this.invincibilityTimer = 0;
+        }
+
+        jump() {
+          if (this.y === groundY - this.h) {
+            this.vy = -18 * scaleFactor;
+            this.sprite = playerJump;
+            this.frameCount = 6;
+          }
+        }
+
+        update() {
+          this.vy += this.gravity;
+          this.y += this.vy;
+
+          if (this.y >= groundY - this.h) {
+            this.y = groundY - this.h;
+            this.vy = 0;
+            if (this.sprite === playerJump) {
+              this.sprite = playerRun;
+              this.frameCount = 8;
+            }
+          }
+          
+          // Invincibility flicker
+          if (this.isInvincible) {
+              this.invincibilityTimer--;
+              if (this.invincibilityTimer <= 0) {
+                  this.isInvincible = false;
+              }
+          }
+        }
+
+        show() {
+          this.frame = (this.frame + 0.25) % this.frameCount;
+          
+          if(this.isInvincible && floor(this.invincibilityTimer / 6) % 2 === 0) {
+              // Don't draw to create flicker effect
+          } else {
+             image(
+                this.sprite,
+                this.x,
+                this.y,
+                this.w,
+                this.h,
+                floor(this.frame) * this.frameWidth,
+                0,
+                this.frameWidth,
+                this.frameHeight
+              );
+          }
+          
+          // Health Bar
+           if (gameState === "boss") {
+               fill(255,0,0);
+               rect(this.x, this.y - 20, this.w, 10);
+               fill(0,255,0);
+               rect(this.x, this.y - 20, this.w * (this.health/100), 10);
+           }
+        }
+
+        hits(obstacle) {
+          return collideRectRect(this.x, this.y, this.w, this.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h);
+        }
+
+        collects(collectible) {
+          return collideRectRect(this.x, this.y, this.w, this.h, collectible.x, collectible.y, collectible.w, collectible.h);
+        }
+        
+        takeDamage(amount) {
+            this.health -= amount;
+            this.isInvincible = true;
+            this.invincibilityTimer = 90; // 1.5 seconds at 60fps
+        }
+      }
+
+      class Obstacle {
+        constructor() {
+          this.w = 40 * scaleFactor;
+          this.h = 40 * scaleFactor;
+          this.x = width;
+          this.y = groundY - this.h;
+        }
+
+        update() {
+          this.x -= baseSpeed * scaleFactor;
+        }
+
+        show() {
+          image(obstacleImg, this.x, this.y, this.w, this.h);
+        }
+
+        isOffscreen() {
+          return this.x < -this.w;
+        }
+      }
+      
+      class Daisy {
+        constructor() {
+            this.w = 30 * scaleFactor;
+            this.h = 30 * scaleFactor;
+            this.x = width;
+            this.y = groundY - this.h - random(30, 100) * scaleFactor;
+        }
+        update() {
+            this.x -= baseSpeed * scaleFactor;
+        }
+        show() {
+            image(daisyImg, this.x, this.y, this.w, this.h);
+        }
+        isOffscreen() {
+            return this.x < -this.w;
+        }
+      }
+      
+      class Sword {
+        constructor() {
+            this.w = 60 * scaleFactor;
+            this.h = 60 * scaleFactor;
+            this.x = width;
+            this.y = height / 2;
+        }
+        update() {
+            this.x -= baseSpeed * scaleFactor;
+        }
+        show() {
+            image(swordImg, this.x, this.y, this.w, this.h);
+        }
+      }
+      
+      class Boss {
+          constructor() {
+              this.w = 120 * scaleFactor;
+              this.h = 120 * scaleFactor;
+              this.x = width;
+              this.y = groundY - this.h;
+              this.health = 500;
+              this.speedX = -1 * scaleFactor;
+              this.moveTimer = 0;
+          }
+          
+          update() {
+              if (this.x > width - this.w - 20) {
+                  this.x += this.speedX;
+              } else {
+                  // Random movement logic
+                  this.moveTimer--;
+                  if (this.moveTimer <= 0) {
+                      let action = random(['forward', 'backward', 'pause']);
+                      if (action === 'forward' && this.x > width * 0.5) {
+                          this.speedX = -random(0.5, 1.5) * scaleFactor;
+                          this.moveTimer = random(60, 120);
+                      } else if (action === 'backward' && this.x < width - this.w - 20) {
+                          this.speedX = random(0.5, 1.5) * scaleFactor;
+                          this.moveTimer = random(30, 90);
+                      } else { // pause
+                          this.speedX = 0;
+                          this.moveTimer = random(60, 180);
+                      }
+                  }
+                   this.x += this.speedX;
+                   // Boundary checks
+                   if (this.x < width * 0.5) this.x = width * 0.5;
+                   if (this.x > width - this.w - 20) this.x = width - this.w - 20;
+              }
+          }
+
+          show() {
+              image(bossImg, this.x, this.y, this.w, this.h);
+              // Boss Health Bar
+              fill(255,0,0);
+              rect(this.x, this.y - 20, this.w, 10);
+              fill(0,255,0);
+              rect(this.x, this.y - 20, this.w * (this.health/500), 10);
+          }
+          
+          hits(player) {
+              return collideRectRect(this.x, this.y, this.w, this.h, player.x, player.y, player.w, player.h);
+          }
+          
+          isHitBy(flame) {
+              return collideRectRect(this.x, this.y, this.w, this.h, flame.x, flame.y, flame.w, flame.h);
+          }
+          
+          takeDamage(amount) {
+              this.health -= amount;
+          }
+      }
+      
+      class Flame {
+          constructor(x, y) {
+              this.x = x;
+              this.y = y;
+              this.w = 40 * scaleFactor;
+              this.h = 20 * scaleFactor;
+              this.speed = 8 * scaleFactor;
+          }
+          update() {
+              this.x += this.speed;
+          }
+          show() {
+              image(flameImg, this.x, this.y, this.w, this.h);
+          }
+      }
+      
+      // p5.collide2d library function
+      function collideRectRect(x, y, w, h, x2, y2, w2, h2) {
+        return (
+          x < x2 + w2 &&
+          x + w > x2 &&
+          y < y2 + h2 &&
+          y + h > y2
+        );
+      }
+    </script>
+  </body>
 </html>
+
 
 
 
