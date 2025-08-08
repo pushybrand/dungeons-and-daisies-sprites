@@ -126,6 +126,9 @@ function setup() {
   let p5canvas = createCanvas(canvasWidth, canvasHeight);
   p5canvas.parent(document.body);
 
+  // UPDATED: Added noSmooth() to keep pixel art crisp
+  noSmooth();
+
   groundY = height - 80 * scaleFactor;
   player = new Player();
   textFont('VT323');
@@ -410,7 +413,6 @@ class Obstacle {
     this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
     this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
     this.x = width;
-    // UPDATED: Raised the skulls slightly
     this.y = groundY - this.h + 10 * scaleFactor;
     this.speed = baseSpeed * scaleFactor;
   }
@@ -807,6 +809,8 @@ function draw() {
 </script>
 </body>
 </html>
+
+
 
 
 
