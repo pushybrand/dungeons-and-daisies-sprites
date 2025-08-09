@@ -73,10 +73,12 @@ let frameDelay = 4;
 let boneSprite;
 let daisySprite;
 let backgroundImg;
-let midgroundImg;
 let titleImg;
 let song;
 let jumpSound, daisySound;
+let bossSprites = []; 
+let bossCurrentFrame = 0;
+let bossFrameDelay = 3;
 let backgroundX = 0;
 let midgroundX = 0;
 let scaleFactor = 1;
@@ -94,7 +96,6 @@ let leftBtn, rightBtn, fireBtn, moveControls, attackControl;
 let nextObstacleFrame = 0;
 let nextDaisyFrame = 0;
 
-let torchLayer;
 let torchRadius;
 const INITIAL_TORCH_RADIUS = 250;
 
@@ -109,8 +110,15 @@ function preload() {
     boneSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/skull.PNG');
     daisySprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/daisy.PNG');
     backgroundImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2.png');
-    midgroundImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/midground_chains.png');
     titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png');
+    
+    // UPDATED: Re-enabled the loop to load all 53 of your dragon frames.
+    for (let i = 0; i <= 52; i++) {
+        let frameNumber = i.toString().padStart(2, '0');
+        let url = `https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_${frameNumber}.png`;
+        bossSprites.push(loadImage(url));
+    }
+
     song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav');
     jumpSound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3');
     daisySound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3');
@@ -123,10 +131,8 @@ function setup() {
   let canvasWidth = min(windowWidth, windowHeight * 2);
   let canvasHeight = canvasWidth / 2;
   scaleFactor = canvasWidth / originalWidth;
-  let p5canvas = createCanvas(canvasWidth, canvasHeight);
-  p5canvas.parent(document.body);
+  createCanvas(canvasWidth, canvasHeight);
 
-  // UPDATED: Added noSmooth() to keep pixel art crisp
   noSmooth();
 
   groundY = height - 80 * scaleFactor;
@@ -136,7 +142,6 @@ function setup() {
 
   setupControls();
   
-  torchLayer = createGraphics(width, height);
   torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
   
   setNextSpawns();
@@ -178,7 +183,6 @@ function windowResized() {
   resizeCanvas(canvasWidth, canvasHeight);
   groundY = height - 80 * scaleFactor;
   if (player) player.adjustPosition();
-  torchLayer = createGraphics(width, height);
   if (score < 200) {
       torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
   }
@@ -303,7 +307,7 @@ class GreenFlame {
 
   hits(boss) {
     return this.x + this.w > boss.x &&
-           this.x < boss.x + boss.w &&
+           this.x < boss.x + this.w &&
            this.y + this.h > boss.y &&
            this.y < boss.y + boss.h;
   }
@@ -347,8 +351,8 @@ class RedFlame {
 
 class Boss {
   constructor() {
-    this.w = 150 * scaleFactor;
-    this.h = 150 * scaleFactor;
+    this.w = 160 * scaleFactor;
+    this.h = 160 * scaleFactor;
     this.x = width - this.w;
     this.y = groundY - this.h;
     this.speed = 2 * scaleFactor;
@@ -388,10 +392,14 @@ class Boss {
 
   show() {
     if (millis() - this.flashTimer < 200 && frameCount % 4 < 2) return;
-    fill(100);
-    stroke(255, 0, 0);
-    strokeWeight(2 * scaleFactor);
-    rect(this.x, this.y, this.w, this.h);
+    if (bossSprites.length > 0 && bossSprites[bossCurrentFrame]) {
+        image(bossSprites[bossCurrentFrame], this.x, this.y, this.w, this.h);
+    } else {
+        fill(100);
+        stroke(255, 0, 0);
+        strokeWeight(2 * scaleFactor);
+        rect(this.x, this.y, this.w, this.h);
+    }
   }
 
   hits(player) {
@@ -491,6 +499,7 @@ function resetGame() {
   score = 0;
   gameOver = false;
   currentFrame = 0;
+  bossCurrentFrame = 0;
   baseSpeed = -6;
   backgroundX = 0;
   midgroundX = 0;
@@ -583,31 +592,21 @@ function manageControls() {
 }
 
 function drawPixelatedTorchEffect() {
-    torchLayer.clear();
-    torchLayer.fill(0, 220);
-    torchLayer.noStroke();
-    torchLayer.rect(0, 0, width, height);
-
-    torchLayer.erase();
-
+    noStroke();
     let playerCenterX = player.x + player.w / 2;
     let playerCenterY = player.y + player.h / 2;
     let lightRadius = torchRadius;
     let pixelSize = 8 * scaleFactor; 
 
-    torchLayer.ellipse(playerCenterX, playerCenterY, player.w * 1.5, player.w * 1.5);
-
-    for (let x = playerCenterX - lightRadius; x < playerCenterX + lightRadius; x += pixelSize) {
-        for (let y = playerCenterY - lightRadius; y < playerCenterY + lightRadius; y += pixelSize) {
+    for (let x = 0; x < width; x += pixelSize) {
+        for (let y = 0; y < height; y += pixelSize) {
             let d = dist(x, y, playerCenterX, playerCenterY);
-            if (d < lightRadius) {
-                torchLayer.rect(x, y, pixelSize, pixelSize);
+            if (d > lightRadius && d > player.w) {
+                fill(0, 220);
+                rect(x, y, pixelSize, pixelSize);
             }
         }
     }
-    
-    torchLayer.noErase();
-    image(torchLayer, 0, 0);
 }
 
 
@@ -617,7 +616,6 @@ function draw() {
   if (gameState === "title") {
     background(0);
     if (backgroundImg) image(backgroundImg, backgroundX, 0, width, height);
-    if (midgroundImg) image(midgroundImg, midgroundX, 0, width, height);
     if (titleImg) image(titleImg, 0, 0, width, height);
     else {
       fill(255);
@@ -633,16 +631,12 @@ function draw() {
     image(backgroundImg, backgroundX, 0, width, height);
     image(backgroundImg, backgroundX + width, 0, width, height);
   }
-  if (midgroundImg) {
-    image(midgroundImg, midgroundX, 0, width, height);
-    image(midgroundImg, midgroundX + width, 0, width, height);
-  }
 
   if (gameState === "playing" && score < 200) { 
     backgroundX += baseSpeed * scaleFactor;
-    midgroundX += baseSpeed * scaleFactor;
-    if (backgroundX <= -width) backgroundX += width;
-    if (midgroundX <= -width) midgroundX += width;
+    if (backgroundX <= -width) {
+        backgroundX += width;
+    }
   }
 
   if (gameState === "playing" || (score >= 200 && !swordCollected)) {
@@ -710,6 +704,9 @@ function draw() {
   if (gameState === "boss") {
     if (frameCount % frameDelay === 0 && (keys['ArrowLeft'] || keys['a'] || keys['ArrowRight'] || keys['d']) && swordCollected) {
       currentFrame = (currentFrame + 1) % playerRunSwordSprites.length;
+    }
+    if (frameCount % bossFrameDelay === 0) {
+        bossCurrentFrame = (bossCurrentFrame + 1) % bossSprites.length;
     }
 
     player.update();
@@ -809,6 +806,7 @@ function draw() {
 </script>
 </body>
 </html>
+
 
 
 
