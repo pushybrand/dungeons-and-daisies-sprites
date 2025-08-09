@@ -86,7 +86,8 @@ let originalWidth = 800;
 let originalHeight = 400;
 let restartButton = null;
 let isHoveringRestart = false;
-let gameState = "title";
+// UPDATED: Start in a "loading" state
+let gameState = "loading";
 let titleStartTime;
 let swordCollected = false;
 let keys = {};
@@ -99,28 +100,39 @@ let nextDaisyFrame = 0;
 let torchRadius;
 const INITIAL_TORCH_RADIUS = 250;
 
+// NEW: Variables for tracking loaded assets
+let assetsToLoad = 0;
+let assetsLoaded = 0;
+
+function assetLoaded() {
+    assetsLoaded++;
+}
+
 function preload() {
   try {
-    playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png');
-    playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png');
-    playerRunSwordSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword1.png');
-    playerRunSwordSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword2.png');
-    magicalSwordSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/powerswordgif.png');
-    greenFlameSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/greenflame.png');
-    boneSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/skull.PNG');
-    daisySprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/daisy.PNG');
-    backgroundImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2.png');
-    titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png');
+    // Count total assets to load
+    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 3; // Sprites, images, dragon frames, sounds
+
+    playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png', assetLoaded);
+    playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png', assetLoaded);
+    playerRunSwordSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword1.png', assetLoaded);
+    playerRunSwordSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword2.png', assetLoaded);
+    magicalSwordSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/powerswordgif.png', assetLoaded);
+    greenFlameSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/greenflame.png', assetLoaded);
+    boneSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/skull.PNG', assetLoaded);
+    daisySprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/daisy.PNG', assetLoaded);
+    backgroundImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2.png', assetLoaded);
+    titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png', assetLoaded);
     
     for (let i = 0; i <= 52; i++) {
         let frameNumber = i.toString().padStart(2, '0');
         let url = `https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_${frameNumber}.png`;
-        bossSprites.push(loadImage(url));
+        bossSprites.push(loadImage(url, assetLoaded));
     }
 
-    song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav');
-    jumpSound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3');
-    daisySound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3');
+    song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav', assetLoaded);
+    jumpSound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3', assetLoaded);
+    daisySound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3', assetLoaded);
   } catch (e) {
     console.error('Preload error:', e);
   }
@@ -350,23 +362,40 @@ class RedFlame {
 
 class Boss {
   constructor() {
-    // UPDATED: Increased boss size
-    this.w = 250 * scaleFactor;
-    this.h = 250 * scaleFactor;
+    this.w = 160 * scaleFactor;
+    this.h = 160 * scaleFactor;
     this.x = width - this.w;
-    this.baseY = groundY - this.h;
-    this.y = this.baseY;
+    this.y = groundY - this.h;
+    this.speed = 2 * scaleFactor;
     this.health = 100;
     this.attackTimer = 0;
     this.flashTimer = 0;
+    this.moveTimer = 0;
+    this.direction = -1;
   }
 
   update() {
-    // UPDATED: Removed horizontal movement, added vertical hover
-    this.y = this.baseY + sin(frameCount * 0.05) * 10 * scaleFactor;
+    this.moveTimer++;
+    if (this.moveTimer > 120) {
+        this.direction = random([-1, 1, 0]);
+        this.moveTimer = 0;
+    }
+
+    this.x += this.speed * this.direction;
+
+    if (this.x < width / 2) {
+        this.x = width / 2;
+        this.direction = 1;
+        this.moveTimer = 0;
+    }
+    if (this.x + this.w > width) {
+        this.x = width - this.w;
+        this.direction = -1;
+        this.moveTimer = 0;
+    }
     
     this.attackTimer++;
-    if (this.attackTimer >= 90) { // Slower attack rate
+    if (this.attackTimer >= 60) {
       redFlames.push(new RedFlame(this.x, this.y + this.h / 2));
       this.attackTimer = 0;
     }
@@ -595,6 +624,28 @@ function drawPixelatedTorchEffect() {
 function draw() {
   manageControls(); 
 
+  // NEW: Loading screen logic
+  if (gameState === "loading") {
+      background(0);
+      fill(255);
+      textSize(32 * scaleFactor);
+      textAlign(CENTER, CENTER);
+      text("Loading...", width / 2, height / 2 - 20 * scaleFactor);
+      
+      let progress = assetsLoaded / assetsToLoad;
+      noFill();
+      stroke(255);
+      rect(width/2 - 100 * scaleFactor, height/2 + 20 * scaleFactor, 200 * scaleFactor, 20 * scaleFactor);
+      fill(255);
+      noStroke();
+      rect(width/2 - 100 * scaleFactor, height/2 + 20 * scaleFactor, 200 * scaleFactor * progress, 20 * scaleFactor);
+
+      if (assetsLoaded >= assetsToLoad) {
+          gameState = "title";
+      }
+      return;
+  }
+
   if (gameState === "title") {
     background(0);
     if (backgroundImg) image(backgroundImg, backgroundX, 0, width, height);
@@ -788,6 +839,7 @@ function draw() {
 </script>
 </body>
 </html>
+
 
 
 
