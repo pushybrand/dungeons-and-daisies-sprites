@@ -112,7 +112,6 @@ function preload() {
     backgroundImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2.png');
     titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png');
     
-    // UPDATED: Re-enabled the loop to load all 53 of your dragon frames.
     for (let i = 0; i <= 52; i++) {
         let frameNumber = i.toString().padStart(2, '0');
         let url = `https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_${frameNumber}.png`;
@@ -351,40 +350,23 @@ class RedFlame {
 
 class Boss {
   constructor() {
-    this.w = 160 * scaleFactor;
-    this.h = 160 * scaleFactor;
+    // UPDATED: Increased boss size
+    this.w = 250 * scaleFactor;
+    this.h = 250 * scaleFactor;
     this.x = width - this.w;
-    this.y = groundY - this.h;
-    this.speed = 2 * scaleFactor;
+    this.baseY = groundY - this.h;
+    this.y = this.baseY;
     this.health = 100;
     this.attackTimer = 0;
     this.flashTimer = 0;
-    this.moveTimer = 0;
-    this.direction = -1;
   }
 
   update() {
-    this.moveTimer++;
-    if (this.moveTimer > 120) {
-        this.direction = random([-1, 1, 0]);
-        this.moveTimer = 0;
-    }
-
-    this.x += this.speed * this.direction;
-
-    if (this.x < width / 2) {
-        this.x = width / 2;
-        this.direction = 1;
-        this.moveTimer = 0;
-    }
-    if (this.x + this.w > width) {
-        this.x = width - this.w;
-        this.direction = -1;
-        this.moveTimer = 0;
-    }
+    // UPDATED: Removed horizontal movement, added vertical hover
+    this.y = this.baseY + sin(frameCount * 0.05) * 10 * scaleFactor;
     
     this.attackTimer++;
-    if (this.attackTimer >= 60) {
+    if (this.attackTimer >= 90) { // Slower attack rate
       redFlames.push(new RedFlame(this.x, this.y + this.h / 2));
       this.attackTimer = 0;
     }
@@ -806,6 +788,8 @@ function draw() {
 </script>
 </body>
 </html>
+
+
 
 
 
