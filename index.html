@@ -79,6 +79,7 @@ let jumpSound, daisySound;
 let bossSprites = []; 
 let bossCurrentFrame = 0;
 let bossFrameDelay = 3;
+let dragonFlameSprite;
 let backgroundX = 0;
 let midgroundX = 0;
 let scaleFactor = 1;
@@ -86,7 +87,6 @@ let originalWidth = 800;
 let originalHeight = 400;
 let restartButton = null;
 let isHoveringRestart = false;
-// UPDATED: Start in a "loading" state
 let gameState = "loading";
 let titleStartTime;
 let swordCollected = false;
@@ -100,7 +100,6 @@ let nextDaisyFrame = 0;
 let torchRadius;
 const INITIAL_TORCH_RADIUS = 250;
 
-// NEW: Variables for tracking loaded assets
 let assetsToLoad = 0;
 let assetsLoaded = 0;
 
@@ -108,31 +107,37 @@ function assetLoaded() {
     assetsLoaded++;
 }
 
+function assetFailed(err) {
+    console.error("Failed to load an asset:", err);
+    assetsToLoad--; 
+}
+
 function preload() {
   try {
-    // Count total assets to load
-    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 3; // Sprites, images, dragon frames, sounds
+    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 3; 
 
-    playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png', assetLoaded);
-    playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png', assetLoaded);
-    playerRunSwordSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword1.png', assetLoaded);
-    playerRunSwordSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword2.png', assetLoaded);
-    magicalSwordSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/powerswordgif.png', assetLoaded);
-    greenFlameSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/greenflame.png', assetLoaded);
-    boneSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/skull.PNG', assetLoaded);
-    daisySprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/daisy.PNG', assetLoaded);
-    backgroundImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2.png', assetLoaded);
-    titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png', assetLoaded);
+    playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png', assetLoaded, assetFailed);
+    playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png', assetLoaded, assetFailed);
+    playerRunSwordSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword1.png', assetLoaded, assetFailed);
+    playerRunSwordSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword2.png', assetLoaded, assetFailed);
+    magicalSwordSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/powerswordgif.png', assetLoaded, assetFailed);
+    greenFlameSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/greenflame.png', assetLoaded, assetFailed);
+    boneSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/skull.PNG', assetLoaded, assetFailed);
+    daisySprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/daisy.PNG', assetLoaded, assetFailed);
+    backgroundImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2.png', assetLoaded, assetFailed);
+    titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png', assetLoaded, assetFailed);
+    
+    dragonFlameSprite = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_flame.png', assetLoaded, assetFailed);
     
     for (let i = 0; i <= 52; i++) {
         let frameNumber = i.toString().padStart(2, '0');
         let url = `https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_${frameNumber}.png`;
-        bossSprites.push(loadImage(url, assetLoaded));
+        bossSprites.push(loadImage(url, assetLoaded, assetFailed));
     }
 
-    song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav', assetLoaded);
-    jumpSound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3', assetLoaded);
-    daisySound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3', assetLoaded);
+    song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav', assetLoaded, assetFailed);
+    jumpSound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
+    daisySound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
   } catch (e) {
     console.error('Preload error:', e);
   }
@@ -330,11 +335,13 @@ class GreenFlame {
 
 class RedFlame {
   constructor(x, y) {
-    this.w = 20 * scaleFactor;
-    this.h = 20 * scaleFactor;
+    // UPDATED: Increased flame size
+    this.w = 96 * scaleFactor;
+    this.h = 96 * scaleFactor;
     this.x = x;
     this.y = y;
-    this.speed = -8 * scaleFactor;
+    // UPDATED: Increased flame speed
+    this.speed = -12 * scaleFactor;
   }
 
   update() {
@@ -342,8 +349,12 @@ class RedFlame {
   }
 
   show() {
-    fill(255, 0, 0);
-    ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
+    if (dragonFlameSprite) {
+        image(dragonFlameSprite, this.x, this.y, this.w, this.h);
+    } else {
+        fill(255, 0, 0);
+        ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
+    }
   }
 
   hits(player) {
@@ -362,42 +373,24 @@ class RedFlame {
 
 class Boss {
   constructor() {
-    this.w = 160 * scaleFactor;
-    this.h = 160 * scaleFactor;
+    this.w = 250 * scaleFactor;
+    this.h = 250 * scaleFactor;
     this.x = width - this.w;
-    this.y = groundY - this.h;
-    this.speed = 2 * scaleFactor;
+    this.baseY = height - this.h;
+    this.y = this.baseY;
     this.health = 100;
-    this.attackTimer = 0;
     this.flashTimer = 0;
-    this.moveTimer = 0;
-    this.direction = -1;
+    // UPDATED: Randomized attack timing
+    this.nextAttackFrame = 0;
   }
 
   update() {
-    this.moveTimer++;
-    if (this.moveTimer > 120) {
-        this.direction = random([-1, 1, 0]);
-        this.moveTimer = 0;
-    }
-
-    this.x += this.speed * this.direction;
-
-    if (this.x < width / 2) {
-        this.x = width / 2;
-        this.direction = 1;
-        this.moveTimer = 0;
-    }
-    if (this.x + this.w > width) {
-        this.x = width - this.w;
-        this.direction = -1;
-        this.moveTimer = 0;
-    }
+    this.y = this.baseY + sin(frameCount * 0.05) * 10 * scaleFactor;
     
-    this.attackTimer++;
-    if (this.attackTimer >= 60) {
-      redFlames.push(new RedFlame(this.x, this.y + this.h / 2));
-      this.attackTimer = 0;
+    // UPDATED: Randomized attack logic
+    if (frameCount > this.nextAttackFrame) {
+      redFlames.push(new RedFlame(this.x + 50 * scaleFactor, this.y + 100 * scaleFactor));
+      this.nextAttackFrame = frameCount + random(30, 90); // Fire again sometime in the next 0.5 to 1.5 seconds
     }
   }
 
@@ -530,6 +523,7 @@ function resetGame() {
 }
 
 function keyPressed() {
+  if (gameState === "loading") return;
   if (!player) return;
 
   if (key === ' ') {
@@ -566,6 +560,7 @@ function keyReleased() {
 }
 
 function touchStarted(event) {
+  if (gameState === "loading") return;
   if (!player) return;
 
   if (event.target.classList.contains('control-btn')) {
@@ -624,7 +619,6 @@ function drawPixelatedTorchEffect() {
 function draw() {
   manageControls(); 
 
-  // NEW: Loading screen logic
   if (gameState === "loading") {
       background(0);
       fill(255);
@@ -839,6 +833,8 @@ function draw() {
 </script>
 </body>
 </html>
+
+
 
 
 
