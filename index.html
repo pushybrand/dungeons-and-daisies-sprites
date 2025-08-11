@@ -99,7 +99,6 @@ let bossCurrentFrame = 0;
 let bossFrameDelay = 3;
 let dragonFlameSprite;
 let heartSprite;
-// NEW: Variable for the champion screen
 let championImg;
 let backgroundX = 0;
 let midgroundX = 0;
@@ -139,7 +138,7 @@ function assetFailed(err) {
 
 function preload() {
   try {
-    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 4 + 1 + 1; // Added 1 for championImg
+    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 4 + 1 + 1;
 
     playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png', assetLoaded, assetFailed);
     playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png', assetLoaded, assetFailed);
@@ -932,13 +931,20 @@ function draw() {
 
 
   if (gameOver) {
+    // UPDATED: New victory screen logic
     if (boss && boss.health <= 0) {
+        fill(0, 180); // Darken the screen
+        rect(0, 0, width, height);
         if (championImg) image(championImg, 0, 0, width, height);
+        
         if (difficulty === 'hard') {
             if (!claimButton) {
                 claimButton = createButton('Claim WL');
                 claimButton.class('game-btn');
-                claimButton.position(width / 2 - 100 * scaleFactor, height - 100 * scaleFactor);
+                // Centered and larger button
+                claimButton.position(width / 2 - 120 * scaleFactor, height / 2 + 50 * scaleFactor);
+                claimButton.style('font-size', (40 * scaleFactor) + 'px');
+                claimButton.style('padding', '20px 40px');
                 claimButton.mousePressed(() => {
                     console.log("Claim WL button clicked!");
                 });
@@ -947,7 +953,7 @@ function draw() {
              if (!restartButton) {
               restartButton = createButton('Restart');
               restartButton.class('game-btn');
-              restartButton.position(width / 2 - 50 * scaleFactor, height - 100 * scaleFactor);
+              restartButton.position(width / 2 - 80 * scaleFactor, height - 100 * scaleFactor);
               restartButton.mousePressed(resetGame);
             }
         }
@@ -963,7 +969,7 @@ function draw() {
         if (!restartButton) {
           restartButton = createButton('Restart');
           restartButton.class('game-btn');
-          restartButton.position(width / 2 - 50 * scaleFactor, height / 2 + 50 * scaleFactor);
+          restartButton.position(width / 2 - 80 * scaleFactor, height / 2 + 50 * scaleFactor);
           restartButton.mousePressed(resetGame);
         }
     }
@@ -974,6 +980,7 @@ function draw() {
 </script>
 </body>
 </html>
+
 
 
 
