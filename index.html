@@ -38,6 +38,24 @@
     .control-btn:active {
         background-color: rgba(255, 255, 255, 0.5);
     }
+    /* Styles for difficulty/end-game buttons */
+    .game-btn {
+        font-family: 'VT323', monospace;
+        background-color: #333;
+        border: 2px solid #fff;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 32px;
+        margin: 10px;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+    .game-btn:hover {
+        background-color: #555;
+    }
   </style>
 </head>
 <body>
@@ -74,32 +92,37 @@ let boneSprite;
 let daisySprite;
 let backgroundImg;
 let titleImg;
-let song;
+let song, bossMusic;
 let jumpSound, daisySound;
 let bossSprites = []; 
 let bossCurrentFrame = 0;
 let bossFrameDelay = 3;
 let dragonFlameSprite;
+let heartSprite;
 let backgroundX = 0;
 let midgroundX = 0;
 let scaleFactor = 1;
 let originalWidth = 800;
 let originalHeight = 400;
 let restartButton = null;
+let claimButton = null;
 let isHoveringRestart = false;
 let gameState = "loading";
 let titleStartTime;
 let swordCollected = false;
 let keys = {};
 
-let leftBtn, rightBtn, fireBtn, moveControls, attackControl;
+// Difficulty and lives variables
+let difficulty = null;
+let lives = 3;
+let easyButton, hardButton;
+let pauseStartTime;
 
+let leftBtn, rightBtn, fireBtn, moveControls, attackControl;
 let nextObstacleFrame = 0;
 let nextDaisyFrame = 0;
-
 let torchRadius;
 const INITIAL_TORCH_RADIUS = 250;
-
 let assetsToLoad = 0;
 let assetsLoaded = 0;
 
@@ -114,7 +137,7 @@ function assetFailed(err) {
 
 function preload() {
   try {
-    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 3; 
+    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 4 + 1;
 
     playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png', assetLoaded, assetFailed);
     playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png', assetLoaded, assetFailed);
@@ -126,8 +149,8 @@ function preload() {
     daisySprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/daisy.PNG', assetLoaded, assetFailed);
     backgroundImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2.png', assetLoaded, assetFailed);
     titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png', assetLoaded, assetFailed);
-    
     dragonFlameSprite = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_flame.png', assetLoaded, assetFailed);
+    heartSprite = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/heart.png', assetLoaded, assetFailed);
     
     for (let i = 0; i <= 52; i++) {
         let frameNumber = i.toString().padStart(2, '0');
@@ -136,6 +159,7 @@ function preload() {
     }
 
     song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav', assetLoaded, assetFailed);
+    bossMusic = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Dragon%20slayer.mp3', assetLoaded, assetFailed);
     jumpSound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
     daisySound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
   } catch (e) {
@@ -157,10 +181,39 @@ function setup() {
   titleStartTime = millis();
 
   setupControls();
+  setupDifficultyButtons();
   
   torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
   
   setNextSpawns();
+}
+
+function setupDifficultyButtons() {
+    easyButton = createButton('Easy');
+    easyButton.class('game-btn');
+    easyButton.position(width / 2 - 150 * scaleFactor, height / 2);
+    easyButton.mousePressed(() => {
+        difficulty = "easy";
+        lives = 3;
+        startGame();
+    });
+    easyButton.hide();
+
+    hardButton = createButton('Hard');
+    hardButton.class('game-btn');
+    hardButton.position(width / 2 + 50 * scaleFactor, height / 2);
+    hardButton.mousePressed(() => {
+        difficulty = "hard";
+        lives = 1;
+        startGame();
+    });
+    hardButton.hide();
+}
+
+function startGame() {
+    easyButton.hide();
+    hardButton.hide();
+    gameState = "playing";
 }
 
 function setNextSpawns() {
@@ -250,7 +303,7 @@ class Player {
   }
 
   show() {
-    if (millis() - this.flashTimer < 200 && frameCount % 4 < 2) return;
+    if (millis() - this.flashTimer < 2000 && frameCount % 4 < 2) return;
     let sprites = swordCollected ? playerRunSwordSprites : playerRunSprites;
     if (sprites[currentFrame]) {
       image(sprites[currentFrame], this.x, this.y, this.w, this.h);
@@ -301,8 +354,8 @@ class Sword {
 
 class GreenFlame {
   constructor(x, y) {
-    this.w = 40 * scaleFactor;
-    this.h = 40 * scaleFactor;
+    this.w = 60 * scaleFactor;
+    this.h = 60 * scaleFactor;
     this.x = x;
     this.y = y;
     this.speed = 8 * scaleFactor;
@@ -335,12 +388,10 @@ class GreenFlame {
 
 class RedFlame {
   constructor(x, y) {
-    // UPDATED: Increased flame size
     this.w = 96 * scaleFactor;
     this.h = 96 * scaleFactor;
     this.x = x;
     this.y = y;
-    // UPDATED: Increased flame speed
     this.speed = -12 * scaleFactor;
   }
 
@@ -380,17 +431,15 @@ class Boss {
     this.y = this.baseY;
     this.health = 100;
     this.flashTimer = 0;
-    // UPDATED: Randomized attack timing
     this.nextAttackFrame = 0;
   }
 
   update() {
     this.y = this.baseY + sin(frameCount * 0.05) * 10 * scaleFactor;
     
-    // UPDATED: Randomized attack logic
     if (frameCount > this.nextAttackFrame) {
       redFlames.push(new RedFlame(this.x + 50 * scaleFactor, this.y + 100 * scaleFactor));
-      this.nextAttackFrame = frameCount + random(30, 90); // Fire again sometime in the next 0.5 to 1.5 seconds
+      this.nextAttackFrame = frameCount + random(30, 90);
     }
   }
 
@@ -512,25 +561,53 @@ function resetGame() {
   boss = null;
   greenFlames = [];
   redFlames = [];
-  gameState = "playing";
+  gameState = "title";
   if (restartButton) {
     restartButton.remove();
     restartButton = null;
+  }
+  if (claimButton) {
+      claimButton.remove();
+      claimButton = null;
+  }
+  if (bossMusic && bossMusic.isPlaying()) {
+      bossMusic.stop();
   }
   torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
   setNextSpawns();
   loop(); 
 }
 
+function handlePlayerDeath() {
+    lives--;
+    if (lives > 0) {
+        respawnPlayer();
+    } else {
+        gameOver = true;
+    }
+}
+
+function respawnPlayer() {
+    obstacles = [];
+    redFlames = [];
+    greenFlames = [];
+    player.health = 100;
+    player.x = 100 * scaleFactor;
+    player.y = groundY - player.h + 20 * scaleFactor;
+    player.vy = 0;
+    player.isJumping = false;
+    player.flashTimer = millis();
+}
+
 function keyPressed() {
-  if (gameState === "loading") return;
+  if (gameState === "loading" || gameState === "difficultySelect") return;
   if (!player) return;
 
   if (key === ' ') {
     if (gameOver) {
       resetGame();
     } else if (gameState === "title") {
-      gameState = "playing";
+      gameState = "difficultySelect";
       if (song && song.isLoaded() && !song.isPlaying()) {
         song.loop();
       }
@@ -560,7 +637,7 @@ function keyReleased() {
 }
 
 function touchStarted(event) {
-  if (gameState === "loading") return;
+  if (gameState === "loading" || gameState === "difficultySelect") return;
   if (!player) return;
 
   if (event.target.classList.contains('control-btn')) {
@@ -568,7 +645,7 @@ function touchStarted(event) {
   }
 
   if (gameState === "title") {
-    gameState = "playing";
+    gameState = "difficultySelect";
     if (song && song.isLoaded() && !song.isPlaying()) {
         song.loop();
     }
@@ -615,6 +692,13 @@ function drawPixelatedTorchEffect() {
     }
 }
 
+function drawLives() {
+    if (heartSprite) {
+        for (let i = 0; i < lives; i++) {
+            image(heartSprite, 10 * scaleFactor + i * (40 * scaleFactor), 10 * scaleFactor, 32 * scaleFactor, 32 * scaleFactor);
+        }
+    }
+}
 
 function draw() {
   manageControls(); 
@@ -652,6 +736,18 @@ function draw() {
     }
     return;
   }
+  
+  if (gameState === "difficultySelect") {
+      background(0);
+      if (backgroundImg) image(backgroundImg, backgroundX, 0, width, height);
+      fill(255);
+      textSize(48 * scaleFactor);
+      textAlign(CENTER, CENTER);
+      text("Select Difficulty", width / 2, height / 2 - 50 * scaleFactor);
+      easyButton.show();
+      hardButton.show();
+      return;
+  }
 
   background(0);
   if (backgroundImg) {
@@ -666,39 +762,54 @@ function draw() {
     }
   }
 
-  if (gameState === "playing" || (score >= 200 && !swordCollected)) {
-    if (frameCount % frameDelay === 0) {
-      currentFrame = (currentFrame + 1) % (swordCollected ? playerRunSwordSprites.length : playerRunSprites.length);
-    }
+  if (gameState === "playing" || gameState === "paused" || (score >= 200 && !swordCollected)) {
+    if (gameState !== "paused") {
+        if (frameCount % frameDelay === 0) {
+          currentFrame = (currentFrame + 1) % (swordCollected ? playerRunSwordSprites.length : playerRunSprites.length);
+        }
 
-    if (frameCount % 300 === 0 && score < 200) {
-      baseSpeed -= 0.5;
+        if (frameCount % 300 === 0 && score < 200) {
+          baseSpeed -= 0.5;
+        }
+        
+        if (frameCount > nextObstacleFrame && score < 200) {
+            obstacles.push(new Obstacle());
+            nextObstacleFrame = frameCount + random(50, 100) / (abs(baseSpeed)/6);
+        }
+        if (frameCount > nextDaisyFrame && score < 200) {
+            daisies.push(new Daisy());
+            nextDaisyFrame = frameCount + random(80, 150);
+        }
+
+        player.update();
     }
     
-    if (frameCount > nextObstacleFrame && score < 200) {
-        obstacles.push(new Obstacle());
-        nextObstacleFrame = frameCount + random(50, 100) / (abs(baseSpeed)/6);
-    }
-    if (frameCount > nextDaisyFrame && score < 200) {
-        daisies.push(new Daisy());
-        nextDaisyFrame = frameCount + random(80, 150);
-    }
-
-    player.update();
     player.show();
 
     for (let i = obstacles.length - 1; i >= 0; i--) {
-      obstacles[i].update();
+      if (gameState !== "paused") obstacles[i].update();
       obstacles[i].show();
-      if (obstacles[i].hits(player)) {
-        gameOver = true;
+      if (obstacles[i].hits(player) && millis() - player.flashTimer > 2000) {
+        if (difficulty === "easy") {
+            lives--;
+            if (lives > 0) {
+                gameState = "paused";
+                pauseStartTime = millis();
+                player.flashTimer = millis();
+                obstacles.splice(i, 1);
+            } else {
+                gameOver = true;
+            }
+        } else {
+            gameOver = true;
+        }
       } else if (obstacles[i].offscreen()) {
         obstacles.splice(i, 1);
       }
     }
 
     for (let i = daisies.length - 1; i >= 0; i--) {
-      daisies[i].update();
+      if (gameState !== "paused") daisies[i].update();
       daisies[i].show();
       if (daisies[i].hits(player)) {
         score += 10;
@@ -709,7 +820,17 @@ function draw() {
       }
     }
 
+    if (gameState === "paused" && millis() - pauseStartTime > 2000) {
+        gameState = "playing";
+    }
+
     if (score >= 200 && !sword && !swordCollected) {
+        if (song.isPlaying()) {
+            song.stop();
+            if (bossMusic && bossMusic.isLoaded() && !bossMusic.isPlaying()) {
+                bossMusic.loop();
+            }
+        }
         if (torchRadius < width) {
             torchRadius += 15 * scaleFactor;
         } else {
@@ -745,7 +866,7 @@ function draw() {
       greenFlames[i].update();
       greenFlames[i].show();
       if (greenFlames[i].hits(boss)) {
-        boss.health -= 5;
+        boss.health -= 1; 
         boss.flashTimer = millis();
         greenFlames.splice(i, 1);
       } else if (greenFlames[i].offscreen()) {
@@ -760,7 +881,7 @@ function draw() {
         player.health -= 10;
         player.flashTimer = millis();
         redFlames.splice(i, 1);
-        if (player.health <= 0) gameOver = true;
+        if (player.health <= 0) handlePlayerDeath();
       } else if (redFlames[i].offscreen()) {
         redFlames.splice(i, 1);
       }
@@ -769,7 +890,7 @@ function draw() {
     if (boss.hits(player) && millis() - player.flashTimer > 1000) {
       player.health -= 20;
       player.flashTimer = millis();
-      if (player.health <= 0) gameOver = true;
+      if (player.health <= 0) handlePlayerDeath();
     }
 
     if (boss.health <= 0) {
@@ -782,23 +903,28 @@ function draw() {
       drawPixelatedTorchEffect();
   }
 
+  if (difficulty === "easy") {
+      drawLives();
+  }
+
   if (gameState === 'boss') {
     fill(255);
     textSize(24 * scaleFactor);
     textAlign(LEFT);
-    text("Player HP: " + player.health, 10 * scaleFactor, 30 * scaleFactor);
+    text("Player HP: " + player.health, 10 * scaleFactor, 50 * scaleFactor);
     fill(255, 0, 0);
-    rect(10 * scaleFactor, 40 * scaleFactor, player.health * 2 * scaleFactor, 10 * scaleFactor);
+    rect(10 * scaleFactor, 60 * scaleFactor, player.health * 2 * scaleFactor, 10 * scaleFactor);
     fill(255);
     textAlign(CENTER);
     text("Boss HP: " + boss.health, width / 2, 30 * scaleFactor);
     fill(255, 0, 0);
     rect(width / 2 - 100 * scaleFactor, 40 * scaleFactor, boss.health * 2 * scaleFactor, 10 * scaleFactor);
-  } else if (gameState === 'playing' || (score >= 200 && !swordCollected)) {
+  } else if (gameState === 'playing' || gameState === 'paused' || (score >= 200 && !swordCollected)) {
       fill(255);
       textSize(24 * scaleFactor);
       textAlign(LEFT);
-      text("Score: " + score, 10 * scaleFactor, 30 * scaleFactor);
+      let scoreY = (difficulty === "easy") ? 50 * scaleFactor : 30 * scaleFactor;
+      text("Score: " + score, 10 * scaleFactor, scoreY);
   }
 
 
@@ -808,31 +934,37 @@ function draw() {
     fill(255);
     textSize(48 * scaleFactor);
     textAlign(CENTER, CENTER);
-    let message = boss && boss.health <= 0 ? "Boss Defeated!" : "Game Over";
+    let message = boss && boss.health <= 0 ? "Congrats!" : "Game Over";
     text(message, width / 2, height / 2 - 20 * scaleFactor);
-    textSize(24 * scaleFactor);
-    text("Score: " + score + "\nPress Space to Restart", width / 2, height / 2 + 20 * scaleFactor);
     
-    if (!restartButton) {
-      restartButton = createButton('Restart');
-      restartButton.position(width / 2 - 40 * scaleFactor, height / 2 + 50 * scaleFactor);
-      restartButton.style('font-family', 'VT323');
-      restartButton.style('font-size', (20 * scaleFactor) + 'px');
-      restartButton.mousePressed(resetGame);
-      restartButton.mouseOver(() => isHoveringRestart = true);
-      restartButton.mouseOut(() => isHoveringRestart = false);
-    }
-    if (isHoveringRestart) {
-      restartButton.style('background-color', '#555');
+    if (boss && boss.health <= 0) {
+        if (!claimButton) {
+            claimButton = createButton('Claim WL');
+            claimButton.class('game-btn');
+            claimButton.position(width / 2 - 100 * scaleFactor, height / 2 + 40 * scaleFactor);
+            claimButton.mousePressed(() => {
+                console.log("Claim WL button clicked!");
+                // Example: window.open('https://your-whitelist-url.com', '_blank');
+            });
+        }
     } else {
-      restartButton.style('background-color', '#333');
+        textSize(24 * scaleFactor);
+        text("Score: " + score + "\nPress Space to Restart", width / 2, height / 2 + 20 * scaleFactor);
+        if (!restartButton) {
+          restartButton = createButton('Restart');
+          restartButton.class('game-btn');
+          restartButton.position(width / 2 - 50 * scaleFactor, height / 2 + 50 * scaleFactor);
+          restartButton.mousePressed(resetGame);
+        }
     }
+    
     noLoop(); 
   }
 }
 </script>
 </body>
 </html>
+
 
 
 
