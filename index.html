@@ -99,6 +99,8 @@ let bossCurrentFrame = 0;
 let bossFrameDelay = 3;
 let dragonFlameSprite;
 let heartSprite;
+// NEW: Variable for the champion screen
+let championImg;
 let backgroundX = 0;
 let midgroundX = 0;
 let scaleFactor = 1;
@@ -137,7 +139,7 @@ function assetFailed(err) {
 
 function preload() {
   try {
-    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 4 + 1;
+    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 4 + 1 + 1; // Added 1 for championImg
 
     playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png', assetLoaded, assetFailed);
     playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png', assetLoaded, assetFailed);
@@ -151,6 +153,7 @@ function preload() {
     titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png', assetLoaded, assetFailed);
     dragonFlameSprite = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_flame.png', assetLoaded, assetFailed);
     heartSprite = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/heart.png', assetLoaded, assetFailed);
+    championImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Champion.png', assetLoaded, assetFailed);
     
     for (let i = 0; i <= 52; i++) {
         let frameNumber = i.toString().padStart(2, '0');
@@ -929,25 +932,32 @@ function draw() {
 
 
   if (gameOver) {
-    fill(0, 150);
-    rect(0, 0, width, height);
-    fill(255);
-    textSize(48 * scaleFactor);
-    textAlign(CENTER, CENTER);
-    let message = boss && boss.health <= 0 ? "Congrats!" : "Game Over";
-    text(message, width / 2, height / 2 - 20 * scaleFactor);
-    
     if (boss && boss.health <= 0) {
-        if (!claimButton) {
-            claimButton = createButton('Claim WL');
-            claimButton.class('game-btn');
-            claimButton.position(width / 2 - 100 * scaleFactor, height / 2 + 40 * scaleFactor);
-            claimButton.mousePressed(() => {
-                console.log("Claim WL button clicked!");
-                // Example: window.open('https://your-whitelist-url.com', '_blank');
-            });
+        if (championImg) image(championImg, 0, 0, width, height);
+        if (difficulty === 'hard') {
+            if (!claimButton) {
+                claimButton = createButton('Claim WL');
+                claimButton.class('game-btn');
+                claimButton.position(width / 2 - 100 * scaleFactor, height - 100 * scaleFactor);
+                claimButton.mousePressed(() => {
+                    console.log("Claim WL button clicked!");
+                });
+            }
+        } else {
+             if (!restartButton) {
+              restartButton = createButton('Restart');
+              restartButton.class('game-btn');
+              restartButton.position(width / 2 - 50 * scaleFactor, height - 100 * scaleFactor);
+              restartButton.mousePressed(resetGame);
+            }
         }
     } else {
+        fill(0, 150);
+        rect(0, 0, width, height);
+        fill(255);
+        textSize(48 * scaleFactor);
+        textAlign(CENTER, CENTER);
+        text("Game Over", width / 2, height / 2 - 20 * scaleFactor);
         textSize(24 * scaleFactor);
         text("Score: " + score + "\nPress Space to Restart", width / 2, height / 2 + 20 * scaleFactor);
         if (!restartButton) {
@@ -964,6 +974,7 @@ function draw() {
 </script>
 </body>
 </html>
+
 
 
 
