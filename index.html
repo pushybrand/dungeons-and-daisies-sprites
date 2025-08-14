@@ -133,12 +133,14 @@ function assetLoaded() {
 
 function assetFailed(err) {
     console.error("Failed to load an asset:", err);
-    assetsToLoad--; 
+    // Still count it as "loaded" to prevent getting stuck on the loading screen
+    assetsLoaded++; 
 }
 
 function preload() {
   try {
-    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 4 + 1 + 1;
+    // UPDATED: Temporarily removed dragon frames from the asset count for stability
+    assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 4 + 1 + 1; 
 
     playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png', assetLoaded, assetFailed);
     playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png', assetLoaded, assetFailed);
@@ -154,11 +156,15 @@ function preload() {
     heartSprite = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/heart.png', assetLoaded, assetFailed);
     championImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Champion.png', assetLoaded, assetFailed);
     
+    // **INSTRUCTION FOR YOU**: The dragon animation is temporarily disabled.
+    // Replace this with a single loadImage() call for your sprite sheet when it's ready.
+    /*
     for (let i = 0; i <= 52; i++) {
         let frameNumber = i.toString().padStart(2, '0');
         let url = `https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_${frameNumber}.png`;
         bossSprites.push(loadImage(url, assetLoaded, assetFailed));
     }
+    */
 
     song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav', assetLoaded, assetFailed);
     bossMusic = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Dragon%20slayer.mp3', assetLoaded, assetFailed);
@@ -843,7 +849,7 @@ function draw() {
     }
 
     if (score >= 200 && !sword && !swordCollected) {
-        obstacles = []; // Clear remaining skulls
+        obstacles = []; 
         if (song.isPlaying()) {
             song.stop();
             if (bossMusic && bossMusic.isLoaded() && !bossMusic.isPlaying()) {
@@ -959,15 +965,17 @@ function draw() {
     if (boss && boss.health <= 0) {
         fill(0, 180); 
         rect(0, 0, width, height);
-        if (championImg) image(championImg, 0, 0, width, height);
+        if (championImg) {
+            let champW = width * 0.8;
+            let champH = champW * (championImg.height / championImg.width);
+            image(championImg, width/2 - champW/2, height/2 - champH/1.5, champW, champH);
+        }
         
         if (difficulty === 'hard') {
             if (!claimButton) {
                 claimButton = createButton('Claim WL');
                 claimButton.class('game-btn');
-                claimButton.position(width / 2 - 120 * scaleFactor, height / 2 + 50 * scaleFactor);
-                claimButton.style('font-size', (40 * scaleFactor) + 'px');
-                claimButton.style('padding', '20px 40px');
+                claimButton.position(width / 2 - 120 * scaleFactor, height / 2 + 60 * scaleFactor);
                 claimButton.mousePressed(() => {
                     console.log("Claim WL button clicked!");
                 });
@@ -1003,6 +1011,7 @@ function draw() {
 </script>
 </body>
 </html>
+
 
 
 
