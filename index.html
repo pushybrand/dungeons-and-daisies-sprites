@@ -19,7 +19,7 @@
     }
     canvas {
       display: block;
-      border: 2px solid #fff;
+      border: none;
     }
     /* Styles for on-screen controls */
     .control-btn {
@@ -170,9 +170,9 @@ function preload() {
 }
 
 function setup() {
-  let canvasWidth = min(windowWidth, windowHeight * 2);
-  let canvasHeight = canvasWidth / 2;
-  scaleFactor = canvasWidth / originalWidth;
+  let canvasWidth = windowWidth;
+  let canvasHeight = min(windowHeight, canvasWidth / 1.6);
+  scaleFactor = canvasHeight / originalHeight;
   createCanvas(canvasWidth, canvasHeight);
 
   noSmooth();
@@ -248,11 +248,13 @@ function setupControls() {
 
 
 function windowResized() {
-  let canvasWidth = min(windowWidth, windowHeight * 2);
-  let canvasHeight = canvasWidth / 2;
-  scaleFactor = canvasWidth / originalWidth;
+  let canvasWidth = windowWidth;
+  let canvasHeight = min(windowHeight, canvasWidth / 1.6);
+  scaleFactor = canvasHeight / originalHeight;
   resizeCanvas(canvasWidth, canvasHeight);
   groundY = height - 80 * scaleFactor;
+  if (easyButton) easyButton.position(width / 2 - 150 * scaleFactor, height / 2);
+  if (hardButton) hardButton.position(width / 2 + 50 * scaleFactor, height / 2);
   if (player) player.adjustPosition();
   if (score < 200) {
       torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
@@ -1005,45 +1007,3 @@ function draw() {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
