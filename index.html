@@ -148,22 +148,22 @@ function preload() {
     greenFlameSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/greenflame.png', assetLoaded, assetFailed);
     boneSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/skull.PNG', assetLoaded, assetFailed);
     daisySprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/daisy.PNG', assetLoaded, assetFailed);
-    backgroundImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/background2.png', assetLoaded, assetFailed);
+    backgroundImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/background2.png', assetLoaded, assetFailed);
     titleImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dungeons_Daisies_title.png', assetLoaded, assetFailed);
-    dragonFlameSprite = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_flame.png', assetLoaded, assetFailed);
-    heartSprite = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/heart.png', assetLoaded, assetFailed);
-    championImg = loadImage('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Champion.png', assetLoaded, assetFailed);
+    dragonFlameSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/dragon_flame.png', assetLoaded, assetFailed);
+    heartSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/heart.png', assetLoaded, assetFailed);
+    championImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Champion.png', assetLoaded, assetFailed);
     
     for (let i = 0; i <= 52; i++) {
         let frameNumber = i.toString().padStart(2, '0');
-        let url = `https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/dragon_${frameNumber}.png`;
+        let url = `https://pushybrand.github.io/dungeons-and-daisies-sprites/dragon_${frameNumber}.png`;
         bossSprites.push(loadImage(url, assetLoaded, assetFailed));
     }
 
-    song = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Deadhedz%20game%20tune.wav', assetLoaded, assetFailed);
-    bossMusic = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/Dragon%20slayer.mp3', assetLoaded, assetFailed);
-    jumpSound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
-    daisySound = loadSound('https://raw.githubusercontent.com/pushybrand/dungeons-and-daisies-sprites/main/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
+    song = loadSound('https://pushybrand.github.io/dungeons-and-daisies-sprites/Deadhedz%20game%20tune.wav', assetLoaded, assetFailed);
+    bossMusic = loadSound('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dragon%20slayer.mp3', assetLoaded, assetFailed);
+    jumpSound = loadSound('https://pushybrand.github.io/dungeons-and-daisies-sprites/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
+    daisySound = loadSound('https://pushybrand.github.io/dungeons-and-daisies-sprites/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
   } catch (e) {
     console.error('Preload error:', e);
   }
