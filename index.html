@@ -598,7 +598,11 @@ function touchStarted(event) {
     gameState="difficultySelect";
     if(song&&song.isLoaded()&&!song.isPlaying()) song.loop();
   } else if((gameState==="playing"||gameState==="boss")&&!player.isJumping) player.jump();
-  else if(gameOver) resetGame();
+  else if(gameOver) {
+    // Hard mode boss win — don't reset, let the CLAIM RELIC button handle the tap
+    if(boss && boss.health <= 0 && difficulty === 'hard') return false;
+    resetGame();
+  }
   return false;
 }
 
