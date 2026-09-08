@@ -13,15 +13,14 @@
       height: 100vh;
       overflow: hidden;
       background-color: #000;
-      -webkit-user-select: none; /* Safari */
-      -ms-user-select: none; /* IE 10+ */
-      user-select: none; /* Standard syntax */
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
     canvas {
       display: block;
       border: none;
     }
-    /* Styles for on-screen controls */
     .control-btn {
         width: 60px;
         height: 60px;
@@ -38,7 +37,6 @@
     .control-btn:active {
         background-color: rgba(255, 255, 255, 0.5);
     }
-    /* Styles for difficulty/end-game buttons */
     .game-btn {
         font-family: 'VT323', monospace;
         background-color: #333;
@@ -53,22 +51,199 @@
         cursor: pointer;
         border-radius: 8px;
     }
-    .game-btn:hover {
-        background-color: #555;
+    .game-btn:hover { background-color: #555; }
+
+    /* ── CLAIM MODAL ── */
+    #claimModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
     }
+    #claimModal.open { display: flex; }
+    #claimBox {
+      background: #000;
+      border: 2px solid #fff;
+      padding: 36px 32px;
+      max-width: 420px;
+      width: 90%;
+      font-family: 'VT323', monospace;
+      text-align: center;
+    }
+    #claimBox h2 {
+      font-size: 32px;
+      color: #FFD700;
+      margin: 0 0 6px;
+      letter-spacing: .1em;
+    }
+    #claimBox .sub {
+      font-size: 16px;
+      color: #aaa;
+      letter-spacing: .12em;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    #claimBox .slot {
+      font-size: 14px;
+      color: #FFD700;
+      letter-spacing: .14em;
+      margin-bottom: 20px;
+    }
+    #claimBox input {
+      width: 100%;
+      box-sizing: border-box;
+      background: #111;
+      border: 1px solid #555;
+      color: #fff;
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      letter-spacing: .08em;
+    }
+    #claimBox input:focus { outline: none; border-color: #FFD700; }
+    #claimBox input::placeholder { color: #555; }
+    #claimSubmit {
+      width: 100%;
+      background: #FFD700;
+      color: #000;
+      border: none;
+      font-family: 'VT323', monospace;
+      font-size: 26px;
+      padding: 12px;
+      cursor: pointer;
+      letter-spacing: .14em;
+      margin-top: 4px;
+    }
+    #claimSubmit:hover { background: #fff; }
+    #claimSubmit:disabled { background: #555; color: #888; cursor: wait; }
+    #claimMsg {
+      margin-top: 14px;
+      font-size: 16px;
+      letter-spacing: .1em;
+      min-height: 20px;
+      line-height: 1.6;
+    }
+    #claimMsg.ok  { color: #FFD700; }
+    #claimMsg.err { color: #f55; }
+    #claimSkip {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #555;
+      cursor: pointer;
+      letter-spacing: .1em;
+      background: none;
+      border: none;
+      font-family: 'VT323', monospace;
+    }
+    #claimSkip:hover { color: #aaa; }
   </style>
 </head>
 <body>
-<!-- On-screen control elements -->
-<div id="controls-container" style="position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; z-index: 10; pointer-events: none;">
-    <div id="move-controls" style="display: none; pointer-events: auto;">
+
+<!-- On-screen controls -->
+<div id="controls-container" style="position:absolute;bottom:20px;width:100%;display:flex;justify-content:space-between;z-index:10;pointer-events:none;">
+    <div id="move-controls" style="display:none;pointer-events:auto;">
         <button id="left-btn" class="control-btn">◀</button>
         <button id="right-btn" class="control-btn">▶</button>
     </div>
-    <div id="attack-control" style="display: none; pointer-events: auto;">
+    <div id="attack-control" style="display:none;pointer-events:auto;">
         <button id="fire-btn" class="control-btn">🔥</button>
     </div>
 </div>
+
+<!-- Relic claim modal -->
+<div id="claimModal">
+  <div id="claimBox">
+    <h2>🏆 RELIC CLAIMED</h2>
+    <p class="sub">You defeated the dragon.<br>The dungeon yields its treasure.</p>
+    <p class="slot" id="slotDisplay">Checking available slots…</p>
+    <input type="email" id="claimEmail" placeholder="YOUR EMAIL" autocomplete="email">
+    <input type="text"  id="claimWallet" placeholder="SOLANA WALLET (OPTIONAL)">
+    <button id="claimSubmit">CLAIM YOUR RELIC</button>
+    <div id="claimMsg"></div>
+    <button id="claimSkip">SKIP — I'LL CLAIM LATER</button>
+  </div>
+</div>
+
+<script>
+/* ── CLAIM MODAL LOGIC ── */
+(function(){
+  const CLAIM_URL = 'https://pushystore.xyz/api/claim-relic';
+
+  const modal   = document.getElementById('claimModal');
+  const emailEl = document.getElementById('claimEmail');
+  const walletEl= document.getElementById('claimWallet');
+  const submitEl= document.getElementById('claimSubmit');
+  const msgEl   = document.getElementById('claimMsg');
+  const slotEl  = document.getElementById('slotDisplay');
+  const skipEl  = document.getElementById('claimSkip');
+
+  function setMsg(txt, cls){ msgEl.textContent=txt; msgEl.className=cls||''; }
+
+  window.openClaimModal = function(){
+    modal.classList.add('open');
+    slotEl.textContent = 'FIRST 50 SIGNALS ONLY — CLAIM YOUR SLOT';
+    emailEl.value = '';
+    walletEl.value = '';
+    setMsg('');
+    submitEl.disabled = false;
+    submitEl.textContent = 'CLAIM YOUR RELIC';
+    setTimeout(()=>emailEl.focus(), 100);
+  };
+
+  submitEl.addEventListener('click', async ()=>{
+    const email  = emailEl.value.trim();
+    const wallet = walletEl.value.trim();
+
+    if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      setMsg('VALID EMAIL REQUIRED.','err'); return;
+    }
+
+    submitEl.disabled = true;
+    submitEl.textContent = 'TRANSMITTING…';
+    setMsg('');
+
+    try {
+      const res = await fetch(CLAIM_URL, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email, wallet: wallet||null })
+      });
+      const data = await res.json();
+
+      if(res.status === 409 && data.full){
+        setMsg('ALL 50 RELICS HAVE BEEN CLAIMED. THE DUNGEON IS EMPTY.','err');
+        submitEl.textContent = 'SLOTS FULL';
+        return;
+      }
+      if(res.status === 409){
+        setMsg(data.error || 'ALREADY CLAIMED.','err');
+        submitEl.disabled = false;
+        submitEl.textContent = 'CLAIM YOUR RELIC';
+        return;
+      }
+      if(!res.ok) throw new Error(data.error || 'error');
+
+      slotEl.textContent = `RELIC #${data.slot}/50 SECURED`;
+      setMsg('SIGNAL CONFIRMED. CHECK YOUR EMAIL FOR YOUR BASEMENT SERIAL. 🌼','ok');
+      submitEl.textContent = 'CLAIMED ✓';
+      skipEl.textContent = 'CLOSE';
+
+    } catch(e){
+      setMsg('TRANSMISSION FAILED. TRY AGAIN.','err');
+      submitEl.disabled = false;
+      submitEl.textContent = 'CLAIM YOUR RELIC';
+    }
+  });
+
+  skipEl.addEventListener('click', ()=>{ modal.classList.remove('open'); });
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('open'); });
+})();
+</script>
 
 <script>
 let player;
@@ -113,7 +288,6 @@ let titleStartTime;
 let swordCollected = false;
 let keys = {};
 
-// Difficulty and lives variables
 let difficulty = null;
 let lives = 3;
 let easyButton, hardButton, playButton;
@@ -127,19 +301,12 @@ const INITIAL_TORCH_RADIUS = 250;
 let assetsToLoad = 0;
 let assetsLoaded = 0;
 
-function assetLoaded() {
-    assetsLoaded++;
-}
-
-function assetFailed(err) {
-    console.error("Failed to load an asset:", err);
-    assetsToLoad--; 
-}
+function assetLoaded() { assetsLoaded++; }
+function assetFailed(err) { console.error("Failed to load an asset:", err); assetsToLoad--; }
 
 function preload() {
   try {
     assetsToLoad = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 53 + 4 + 1 + 1;
-
     playerRunSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run1.png', assetLoaded, assetFailed);
     playerRunSprites[1] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/player_run2.png', assetLoaded, assetFailed);
     playerRunSwordSprites[0] = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/run_sword1.png', assetLoaded, assetFailed);
@@ -153,20 +320,15 @@ function preload() {
     dragonFlameSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/dragon_flame.png', assetLoaded, assetFailed);
     heartSprite = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/heart.png', assetLoaded, assetFailed);
     championImg = loadImage('https://pushybrand.github.io/dungeons-and-daisies-sprites/Champion.png', assetLoaded, assetFailed);
-    
     for (let i = 0; i <= 52; i++) {
         let frameNumber = i.toString().padStart(2, '0');
-        let url = `https://pushybrand.github.io/dungeons-and-daisies-sprites/dragon_${frameNumber}.png`;
-        bossSprites.push(loadImage(url, assetLoaded, assetFailed));
+        bossSprites.push(loadImage(`https://pushybrand.github.io/dungeons-and-daisies-sprites/dragon_${frameNumber}.png`, assetLoaded, assetFailed));
     }
-
     song = loadSound('https://pushybrand.github.io/dungeons-and-daisies-sprites/Deadhedz%20game%20tune.wav', assetLoaded, assetFailed);
     bossMusic = loadSound('https://pushybrand.github.io/dungeons-and-daisies-sprites/Dragon%20slayer.mp3', assetLoaded, assetFailed);
     jumpSound = loadSound('https://pushybrand.github.io/dungeons-and-daisies-sprites/ES_Retro%2C%208%20Bit%2C%20Jump%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
     daisySound = loadSound('https://pushybrand.github.io/dungeons-and-daisies-sprites/ES_Notification%2C%20Video%20Game%2C%20Collect%20Item%2C%20Select%2001%20-%20Epidemic%20Sound.mp3', assetLoaded, assetFailed);
-  } catch (e) {
-    console.error('Preload error:', e);
-  }
+  } catch (e) { console.error('Preload error:', e); }
 }
 
 function setup() {
@@ -174,19 +336,14 @@ function setup() {
   let canvasHeight = min(windowHeight, canvasWidth / 1.6);
   scaleFactor = canvasHeight / originalHeight;
   createCanvas(canvasWidth, canvasHeight);
-
   noSmooth();
-
   groundY = height - 80 * scaleFactor;
   player = new Player();
   textFont('VT323');
   titleStartTime = millis();
-
   setupControls();
   setupDifficultyButtons();
-  
   torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
-  
   setNextSpawns();
 }
 
@@ -194,29 +351,17 @@ function setupDifficultyButtons() {
     easyButton = createButton('Easy');
     easyButton.class('game-btn');
     easyButton.position(width / 2 - 150 * scaleFactor, height / 2);
-    easyButton.mousePressed(() => {
-        difficulty = "easy";
-        lives = 3;
-        startGame();
-    });
+    easyButton.mousePressed(() => { difficulty = "easy"; lives = 3; startGame(); });
     easyButton.hide();
 
     hardButton = createButton('Hard');
     hardButton.class('game-btn');
     hardButton.position(width / 2 + 50 * scaleFactor, height / 2);
-    hardButton.mousePressed(() => {
-        difficulty = "hard";
-        lives = 1;
-        startGame();
-    });
+    hardButton.mousePressed(() => { difficulty = "hard"; lives = 1; startGame(); });
     hardButton.hide();
 }
 
-function startGame() {
-    easyButton.hide();
-    hardButton.hide();
-    gameState = "playing";
-}
+function startGame() { easyButton.hide(); hardButton.hide(); gameState = "playing"; }
 
 function setNextSpawns() {
     nextObstacleFrame = frameCount + random(60, 120);
@@ -229,23 +374,19 @@ function setupControls() {
     leftBtn = document.getElementById('left-btn');
     rightBtn = document.getElementById('right-btn');
     fireBtn = document.getElementById('fire-btn');
-
     leftBtn.addEventListener('mousedown', () => keys['ArrowLeft'] = true);
     leftBtn.addEventListener('mouseup', () => keys['ArrowLeft'] = false);
     leftBtn.addEventListener('mouseleave', () => keys['ArrowLeft'] = false);
     leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowLeft'] = true; });
     leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
-
     rightBtn.addEventListener('mousedown', () => keys['ArrowRight'] = true);
     rightBtn.addEventListener('mouseup', () => keys['ArrowRight'] = false);
     rightBtn.addEventListener('mouseleave', () => keys['ArrowRight'] = false);
     rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowRight'] = true; });
     rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
-
     fireBtn.addEventListener('mousedown', () => { if (player) player.attack(); });
     fireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if (player) player.attack(); });
 }
-
 
 function windowResized() {
   let canvasWidth = windowWidth;
@@ -256,72 +397,45 @@ function windowResized() {
   if (easyButton) easyButton.position(width / 2 - 150 * scaleFactor, height / 2);
   if (hardButton) hardButton.position(width / 2 + 50 * scaleFactor, height / 2);
   if (player) player.adjustPosition();
-  if (score < 200) {
-      torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
-  }
+  if (score < 200) torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
 }
 
 class Player {
   constructor() {
-    this.w = 96 * scaleFactor;
-    this.h = 96 * scaleFactor;
-    this.hitboxW = 64 * scaleFactor;
-    this.hitboxH = 64 * scaleFactor;
+    this.w = 96 * scaleFactor; this.h = 96 * scaleFactor;
+    this.hitboxW = 64 * scaleFactor; this.hitboxH = 64 * scaleFactor;
     this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
     this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
     this.x = 100 * scaleFactor;
     this.y = groundY - this.h + 20 * scaleFactor;
-    this.vy = 0;
-    this.gravity = 0.8 * scaleFactor;
-    this.jumpForce = -15 * scaleFactor;
-    this.isJumping = false;
-    this.speed = 5 * scaleFactor;
-    this.health = 100;
-    this.flashTimer = 0;
+    this.vy = 0; this.gravity = 0.8 * scaleFactor;
+    this.jumpForce = -15 * scaleFactor; this.isJumping = false;
+    this.speed = 5 * scaleFactor; this.health = 100; this.flashTimer = 0;
   }
-
   jump() {
-    if (jumpSound && jumpSound.isLoaded()) {
-        jumpSound.play();
-    }
-    this.vy = this.jumpForce;
-    this.isJumping = true;
+    if (jumpSound && jumpSound.isLoaded()) jumpSound.play();
+    this.vy = this.jumpForce; this.isJumping = true;
   }
-
-  attack() {
-    greenFlames.push(new GreenFlame(this.x + this.w, this.y + this.h / 2));
-  }
-
+  attack() { greenFlames.push(new GreenFlame(this.x + this.w, this.y + this.h / 2)); }
   update() {
-    this.vy += this.gravity;
-    this.y += this.vy;
+    this.vy += this.gravity; this.y += this.vy;
     if (this.y > groundY - this.h + 20 * scaleFactor) {
-      this.y = groundY - this.h + 20 * scaleFactor;
-      this.vy = 0;
-      this.isJumping = false;
+      this.y = groundY - this.h + 20 * scaleFactor; this.vy = 0; this.isJumping = false;
     }
     if (gameState === "boss" || (score >= 200 && !swordCollected)) {
       if (keys['ArrowLeft'] || keys['a']) this.x = max(0, this.x - this.speed);
       if (keys['ArrowRight'] || keys['d']) this.x = min(width - this.w, this.x + this.speed);
     }
   }
-
   show() {
     if (millis() - this.flashTimer < 2000 && frameCount % 4 < 2) return;
     let sprites = swordCollected ? playerRunSwordSprites : playerRunSprites;
-    if (sprites[currentFrame]) {
-      image(sprites[currentFrame], this.x, this.y, this.w, this.h);
-    } else {
-      fill(0, 255, 0);
-      rect(this.x, this.y, this.w, this.h);
-    }
+    if (sprites[currentFrame]) image(sprites[currentFrame], this.x, this.y, this.w, this.h);
+    else { fill(0, 255, 0); rect(this.x, this.y, this.w, this.h); }
   }
-
   adjustPosition() {
-    this.w = 96 * scaleFactor;
-    this.h = 96 * scaleFactor;
-    this.hitboxW = 64 * scaleFactor;
-    this.hitboxH = 64 * scaleFactor;
+    this.w = 96 * scaleFactor; this.h = 96 * scaleFactor;
+    this.hitboxW = 64 * scaleFactor; this.hitboxH = 64 * scaleFactor;
     this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
     this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
     this.x = 100 * scaleFactor;
@@ -331,677 +445,366 @@ class Player {
 
 class Sword {
   constructor() {
-    this.w = 100 * scaleFactor;
-    this.h = 200 * scaleFactor;
-    this.x = width / 2 - this.w / 2;
-    this.baseY = 100 * scaleFactor;
-    this.y = this.baseY;
+    this.w = 100 * scaleFactor; this.h = 200 * scaleFactor;
+    this.x = width / 2 - this.w / 2; this.baseY = 100 * scaleFactor; this.y = this.baseY;
   }
-
   show() {
     let hoverY = this.baseY + sin(frameCount * 0.1) * 10 * scaleFactor;
-    if (magicalSwordSprite) {
-      image(magicalSwordSprite, this.x, hoverY, this.w, this.h);
-    } else {
-      fill(0, 255, 255);
-      rect(this.x, hoverY, this.w, this.h);
-    }
+    if (magicalSwordSprite) image(magicalSwordSprite, this.x, hoverY, this.w, this.h);
+    else { fill(0, 255, 255); rect(this.x, hoverY, this.w, this.h); }
   }
-
   hits(player) {
-    return player.x + player.w > this.x &&
-           player.x < this.x + this.w &&
-           player.y + player.h > this.y &&
-           player.y < this.y + this.h;
+    return player.x + player.w > this.x && player.x < this.x + this.w &&
+           player.y + player.h > this.y && player.y < this.y + this.h;
   }
 }
 
 class GreenFlame {
-  constructor(x, y) {
-    this.w = 60 * scaleFactor;
-    this.h = 60 * scaleFactor;
-    this.x = x;
-    this.y = y;
-    this.speed = 8 * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
+  constructor(x, y) { this.w = 60*scaleFactor; this.h = 60*scaleFactor; this.x=x; this.y=y; this.speed=8*scaleFactor; }
+  update() { this.x += this.speed; }
   show() {
-    if (greenFlameSprite) {
-      image(greenFlameSprite, this.x, this.y, this.w, this.h);
-    } else {
-      fill(0, 255, 0);
-      ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-    }
+    if (greenFlameSprite) image(greenFlameSprite, this.x, this.y, this.w, this.h);
+    else { fill(0,255,0); ellipse(this.x+this.w/2, this.y+this.h/2, this.w, this.h); }
   }
-
   hits(boss) {
-    return this.x + this.w > boss.x &&
-           this.x < boss.x + this.w &&
-           this.y + this.h > boss.y &&
-           this.y < boss.y + boss.h;
+    return this.x+this.w>boss.x && this.x<boss.x+this.w &&
+           this.y+this.h>boss.y && this.y<boss.y+boss.h;
   }
-
-  offscreen() {
-    return this.x > width;
-  }
+  offscreen() { return this.x > width; }
 }
 
 class RedFlame {
-  constructor(x, y) {
-    this.w = 96 * scaleFactor;
-    this.h = 96 * scaleFactor;
-    this.x = x;
-    this.y = y;
-    this.speed = -12 * scaleFactor;
-  }
-
-  update() {
-    this.x += this.speed;
-  }
-
+  constructor(x,y) { this.w=96*scaleFactor; this.h=96*scaleFactor; this.x=x; this.y=y; this.speed=-12*scaleFactor; }
+  update() { this.x += this.speed; }
   show() {
-    if (dragonFlameSprite) {
-        image(dragonFlameSprite, this.x, this.y, this.w, this.h);
-    } else {
-        fill(255, 0, 0);
-        ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-    }
+    if (dragonFlameSprite) image(dragonFlameSprite, this.x, this.y, this.w, this.h);
+    else { fill(255,0,0); ellipse(this.x+this.w/2, this.y+this.h/2, this.w, this.h); }
   }
-
   hits(player) {
-    let playerHitboxX = player.x + player.hitboxOffsetX;
-    let playerHitboxY = player.y + player.hitboxOffsetY;
-    return playerHitboxX + player.hitboxW > this.x &&
-           playerHitboxX < this.x + this.w &&
-           playerHitboxY + player.hitboxH > this.y &&
-           playerHitboxY < this.y + this.h;
+    let px=player.x+player.hitboxOffsetX, py=player.y+player.hitboxOffsetY;
+    return px+player.hitboxW>this.x && px<this.x+this.w && py+player.hitboxH>this.y && py<this.y+this.h;
   }
-
-  offscreen() {
-    return this.x + this.w < 0;
-  }
+  offscreen() { return this.x+this.w<0; }
 }
 
 class Boss {
   constructor() {
-    this.w = 250 * scaleFactor;
-    this.h = 250 * scaleFactor;
-    this.x = width - this.w;
-    this.baseY = height - this.h;
-    this.y = this.baseY;
-    this.health = 100;
-    this.flashTimer = 0;
-    this.nextAttackFrame = 0;
+    this.w=250*scaleFactor; this.h=250*scaleFactor;
+    this.x=width-this.w; this.baseY=height-this.h; this.y=this.baseY;
+    this.health=100; this.flashTimer=0; this.nextAttackFrame=0;
   }
-
   update() {
-    this.y = this.baseY + sin(frameCount * 0.05) * 10 * scaleFactor;
-    
+    this.y = this.baseY + sin(frameCount*0.05)*10*scaleFactor;
     if (frameCount > this.nextAttackFrame) {
-      redFlames.push(new RedFlame(this.x + 50 * scaleFactor, this.y + 100 * scaleFactor));
-      this.nextAttackFrame = frameCount + random(30, 90);
+      redFlames.push(new RedFlame(this.x+50*scaleFactor, this.y+100*scaleFactor));
+      this.nextAttackFrame = frameCount + random(30,90);
     }
   }
-
   show() {
-    if (millis() - this.flashTimer < 200 && frameCount % 4 < 2) return;
-    if (bossSprites.length > 0 && bossSprites[bossCurrentFrame]) {
-        image(bossSprites[bossCurrentFrame], this.x, this.y, this.w, this.h);
-    } else {
-        fill(100);
-        stroke(255, 0, 0);
-        strokeWeight(2 * scaleFactor);
-        rect(this.x, this.y, this.w, this.h);
-    }
+    if (millis()-this.flashTimer<200 && frameCount%4<2) return;
+    if (bossSprites.length>0 && bossSprites[bossCurrentFrame])
+      image(bossSprites[bossCurrentFrame], this.x, this.y, this.w, this.h);
+    else { fill(100); stroke(255,0,0); strokeWeight(2*scaleFactor); rect(this.x,this.y,this.w,this.h); }
   }
-
   hits(player) {
-    let playerHitboxX = player.x + player.hitboxOffsetX;
-    let playerHitboxY = player.y + player.hitboxOffsetY;
-    return playerHitboxX + player.hitboxW > this.x &&
-           playerHitboxX < this.x + this.w &&
-           playerHitboxY + player.hitboxH > this.y &&
-           playerHitboxY < this.y + this.h;
+    let px=player.x+player.hitboxOffsetX, py=player.y+player.hitboxOffsetY;
+    return px+player.hitboxW>this.x && px<this.x+this.w && py+player.hitboxH>this.y && py<this.y+this.h;
   }
 }
 
 class Obstacle {
   constructor() {
-    this.w = 48 * scaleFactor;
-    this.h = 48 * scaleFactor;
-    this.hitboxW = 32 * scaleFactor;
-    this.hitboxH = 32 * scaleFactor;
-    this.hitboxOffsetX = (this.w - this.hitboxW) / 2;
-    this.hitboxOffsetY = (this.h - this.hitboxH) / 2;
-    this.x = width;
-    this.y = groundY - this.h + 10 * scaleFactor;
-    this.speed = baseSpeed * scaleFactor;
+    this.w=48*scaleFactor; this.h=48*scaleFactor;
+    this.hitboxW=32*scaleFactor; this.hitboxH=32*scaleFactor;
+    this.hitboxOffsetX=(this.w-this.hitboxW)/2; this.hitboxOffsetY=(this.h-this.hitboxH)/2;
+    this.x=width; this.y=groundY-this.h+10*scaleFactor; this.speed=baseSpeed*scaleFactor;
   }
-
-  update() {
-    this.x += this.speed;
-  }
-
+  update() { this.x+=this.speed; }
   show() {
-    if (boneSprite) {
-      image(boneSprite, this.x, this.y, this.w, this.h);
-    } else {
-      fill(150);
-      stroke(0);
-      strokeWeight(2 * scaleFactor);
-      rect(this.x, this.y, this.w, this.h);
-    }
+    if (boneSprite) image(boneSprite,this.x,this.y,this.w,this.h);
+    else { fill(150); stroke(0); strokeWeight(2*scaleFactor); rect(this.x,this.y,this.w,this.h); }
   }
-
   hits(player) {
-    let playerHitboxX = player.x + player.hitboxOffsetX;
-    let playerHitboxY = player.y + player.hitboxOffsetY;
-    let thisHitboxX = this.x + this.hitboxOffsetX;
-    let thisHitboxY = this.y + this.hitboxOffsetY;
-    return playerHitboxX + player.hitboxW > thisHitboxX &&
-           playerHitboxX < thisHitboxX + this.hitboxW &&
-           playerHitboxY + player.hitboxH > thisHitboxY &&
-           playerHitboxY < thisHitboxY + this.hitboxH;
+    let px=player.x+player.hitboxOffsetX, py=player.y+player.hitboxOffsetY;
+    let tx=this.x+this.hitboxOffsetX, ty=this.y+this.hitboxOffsetY;
+    return px+player.hitboxW>tx && px<tx+this.hitboxW && py+player.hitboxH>ty && py<ty+this.hitboxH;
   }
-
-  offscreen() {
-    return this.x + this.w < 0;
-  }
+  offscreen() { return this.x+this.w<0; }
 }
 
 class Daisy {
   constructor() {
-    this.w = 48 * scaleFactor;
-    this.h = 48 * scaleFactor;
-    this.x = width;
-    this.y = random(150 * scaleFactor, groundY - this.h);
-    this.speed = baseSpeed * scaleFactor;
+    this.w=48*scaleFactor; this.h=48*scaleFactor;
+    this.x=width; this.y=random(150*scaleFactor, groundY-this.h); this.speed=baseSpeed*scaleFactor;
   }
-
-  update() {
-    this.x += this.speed;
-  }
-
+  update() { this.x+=this.speed; }
   show() {
-    if (daisySprite) {
-      image(daisySprite, this.x, this.y, this.w, this.h);
-    } else {
-      fill(255, 255, 0);
-      stroke(0);
-      strokeWeight(2 * scaleFactor);
-      ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-    }
+    if (daisySprite) image(daisySprite,this.x,this.y,this.w,this.h);
+    else { fill(255,255,0); stroke(0); strokeWeight(2*scaleFactor); ellipse(this.x+this.w/2,this.y+this.h/2,this.w,this.h); }
   }
-
   hits(player) {
-    return player.x + player.w > this.x &&
-           player.x < this.x + this.w &&
-           player.y + player.h > this.y &&
-           player.y < this.y + this.h;
+    return player.x+player.w>this.x && player.x<this.x+this.w &&
+           player.y+player.h>this.y && player.y<this.y+this.h;
   }
-
-  offscreen() {
-    return this.x + this.w < 0;
-  }
+  offscreen() { return this.x+this.w<0; }
 }
 
 function resetGame() {
-  player = new Player();
-  obstacles = [];
-  daisies = [];
-  score = 0;
-  gameOver = false;
-  currentFrame = 0;
-  bossCurrentFrame = 0;
-  baseSpeed = -6;
-  backgroundX = 0;
-  midgroundX = 0;
-  swordCollected = false;
-  sword = null;
-  boss = null;
-  greenFlames = [];
-  redFlames = [];
-  gameState = "title";
-  if (restartButton) {
-    restartButton.remove();
-    restartButton = null;
-  }
-  if (claimButton) {
-      claimButton.remove();
-      claimButton = null;
-  }
-  if (bossMusic && bossMusic.isPlaying()) {
-      bossMusic.stop();
-  }
-  torchRadius = INITIAL_TORCH_RADIUS * scaleFactor;
-  setNextSpawns();
-  loop(); 
+  player=new Player(); obstacles=[]; daisies=[]; score=0; gameOver=false;
+  currentFrame=0; bossCurrentFrame=0; baseSpeed=-6; backgroundX=0; midgroundX=0;
+  swordCollected=false; sword=null; boss=null; greenFlames=[]; redFlames=[];
+  gameState="title";
+  if(restartButton){ restartButton.remove(); restartButton=null; }
+  if(claimButton){ claimButton.remove(); claimButton=null; }
+  if(bossMusic && bossMusic.isPlaying()) bossMusic.stop();
+  torchRadius=INITIAL_TORCH_RADIUS*scaleFactor;
+  setNextSpawns(); loop();
 }
 
-function handlePlayerDeath() {
-    lives--;
-    if (lives > 0) {
-        respawnPlayer();
-    } else {
-        gameOver = true;
-    }
-}
+function handlePlayerDeath() { lives--; if(lives>0) respawnPlayer(); else gameOver=true; }
 
 function respawnPlayer() {
-    obstacles = [];
-    redFlames = [];
-    greenFlames = [];
-    player.health = 100;
-    player.x = 100 * scaleFactor;
-    player.y = groundY - player.h + 20 * scaleFactor;
-    player.vy = 0;
-    player.isJumping = false;
-    player.flashTimer = millis();
+  obstacles=[]; redFlames=[]; greenFlames=[];
+  player.health=100; player.x=100*scaleFactor;
+  player.y=groundY-player.h+20*scaleFactor;
+  player.vy=0; player.isJumping=false; player.flashTimer=millis();
 }
 
 function keyPressed() {
-  if (gameState === "loading" || gameState === "difficultySelect" || gameState === "instructions") return;
-  if (!player) return;
-
-  if (key === ' ') {
-    if (gameOver) {
-      resetGame();
-    } else if (gameState === "title") {
-      gameState = "difficultySelect";
-      if (song && song.isLoaded() && !song.isPlaying()) {
-        song.loop();
-      }
-    } else if ((gameState === "playing" || gameState === "boss") && !player.isJumping) {
-      player.jump();
-    }
-    return false; 
+  if(gameState==="loading"||gameState==="difficultySelect"||gameState==="instructions") return;
+  if(!player) return;
+  if(key===' '){
+    if(gameOver) resetGame();
+    else if(gameState==="title"){
+      gameState="difficultySelect";
+      if(song&&song.isLoaded()&&!song.isPlaying()) song.loop();
+    } else if((gameState==="playing"||gameState==="boss")&&!player.isJumping) player.jump();
+    return false;
   }
-
-  if (keyCode === ENTER && swordCollected && gameState === "boss") {
-    player.attack();
-  }
-
-  if (gameState === "boss" || (score >= 200 && !swordCollected)) {
-    keys[key.toLowerCase()] = true;
-    keys[key] = true;
-  }
+  if(keyCode===ENTER&&swordCollected&&gameState==="boss") player.attack();
+  if(gameState==="boss"||(score>=200&&!swordCollected)){ keys[key.toLowerCase()]=true; keys[key]=true; }
 }
 
 function keyReleased() {
-  if (!player) return;
-  
-  if (gameState === "boss" || (score >= 200 && !swordCollected)) {
-    keys[key.toLowerCase()] = false;
-    keys[key] = false;
-  }
+  if(!player) return;
+  if(gameState==="boss"||(score>=200&&!swordCollected)){ keys[key.toLowerCase()]=false; keys[key]=false; }
 }
 
 function touchStarted(event) {
-  if (gameState === "loading" || gameState === "difficultySelect" || gameState === "instructions") return;
-  if (!player) return;
-
-  if (event.target.classList.contains('control-btn')) {
-      return false;
-  }
-
-  if (gameState === "title") {
-    gameState = "difficultySelect";
-    if (song && song.isLoaded() && !song.isPlaying()) {
-        song.loop();
-    }
-  } else if ((gameState === "playing" || gameState === "boss") && !player.isJumping) {
-    player.jump();
-  } else if (gameOver) {
-    resetGame();
-  }
+  if(gameState==="loading"||gameState==="difficultySelect"||gameState==="instructions") return;
+  if(!player) return;
+  if(event.target.classList.contains('control-btn')) return false;
+  if(gameState==="title"){
+    gameState="difficultySelect";
+    if(song&&song.isLoaded()&&!song.isPlaying()) song.loop();
+  } else if((gameState==="playing"||gameState==="boss")&&!player.isJumping) player.jump();
+  else if(gameOver) resetGame();
   return false;
 }
 
 function manageControls() {
-    const showMovement = (score >= 200 && !swordCollected) || gameState === "boss";
-    const showAttack = gameState === "boss" && swordCollected;
-
-    if (showMovement) {
-        moveControls.style.display = 'flex';
-    } else {
-        moveControls.style.display = 'none';
-    }
-
-    if (showAttack) {
-        attackControl.style.display = 'block';
-    } else {
-        attackControl.style.display = 'none';
-    }
+  const showMovement=(score>=200&&!swordCollected)||gameState==="boss";
+  const showAttack=gameState==="boss"&&swordCollected;
+  moveControls.style.display=showMovement?'flex':'none';
+  attackControl.style.display=showAttack?'block':'none';
 }
 
 function drawPixelatedTorchEffect() {
-    noStroke();
-    let playerCenterX = player.x + player.w / 2;
-    let playerCenterY = player.y + player.h / 2;
-    let lightRadius = torchRadius;
-    let pixelSize = 8 * scaleFactor; 
-
-    for (let x = 0; x < width; x += pixelSize) {
-        for (let y = 0; y < height; y += pixelSize) {
-            let d = dist(x, y, playerCenterX, playerCenterY);
-            if (d > lightRadius && d > player.w) {
-                fill(0, 220);
-                rect(x, y, pixelSize, pixelSize);
-            }
-        }
+  noStroke();
+  let pcx=player.x+player.w/2, pcy=player.y+player.h/2;
+  let ps=8*scaleFactor;
+  for(let x=0;x<width;x+=ps){
+    for(let y=0;y<height;y+=ps){
+      let d=dist(x,y,pcx,pcy);
+      if(d>torchRadius&&d>player.w){ fill(0,220); rect(x,y,ps,ps); }
     }
+  }
 }
 
 function drawLives() {
-    if (heartSprite) {
-        for (let i = 0; i < lives; i++) {
-            image(heartSprite, 10 * scaleFactor + i * (40 * scaleFactor), 10 * scaleFactor, 32 * scaleFactor, 32 * scaleFactor);
-        }
-    }
+  if(heartSprite)
+    for(let i=0;i<lives;i++)
+      image(heartSprite,10*scaleFactor+i*(40*scaleFactor),10*scaleFactor,32*scaleFactor,32*scaleFactor);
 }
 
 function draw() {
-  manageControls(); 
+  manageControls();
 
-  if (gameState === "loading") {
-      background(0);
-      fill(255);
-      textSize(32 * scaleFactor);
-      textAlign(CENTER, CENTER);
-      text("Loading...", width / 2, height / 2 - 20 * scaleFactor);
-      
-      let progress = assetsToLoad > 0 ? assetsLoaded / assetsToLoad : 1;
-      noFill();
-      stroke(255);
-      rect(width/2 - 100 * scaleFactor, height/2 + 20 * scaleFactor, 200 * scaleFactor, 20 * scaleFactor);
-      fill(255);
-      noStroke();
-      rect(width/2 - 100 * scaleFactor, height/2 + 20 * scaleFactor, 200 * scaleFactor * progress, 20 * scaleFactor);
-
-      if (assetsLoaded >= assetsToLoad) {
-          gameState = "title";
-      }
-      return;
-  }
-
-  if (gameState === "title") {
-    background(0);
-    if (backgroundImg) image(backgroundImg, backgroundX, 0, width, height);
-    if (titleImg) image(titleImg, 0, 0, width, height);
-    else {
-      fill(255);
-      textSize(32 * scaleFactor);
-      textAlign(CENTER, CENTER);
-      text("Dungeons and Daisies Runner\nPress to Start", width / 2, height / 2);
-    }
+  if(gameState==="loading"){
+    background(0); fill(255); textSize(32*scaleFactor); textAlign(CENTER,CENTER);
+    text("Loading...",width/2,height/2-20*scaleFactor);
+    let progress=assetsToLoad>0?assetsLoaded/assetsToLoad:1;
+    noFill(); stroke(255); rect(width/2-100*scaleFactor,height/2+20*scaleFactor,200*scaleFactor,20*scaleFactor);
+    fill(255); noStroke(); rect(width/2-100*scaleFactor,height/2+20*scaleFactor,200*scaleFactor*progress,20*scaleFactor);
+    if(assetsLoaded>=assetsToLoad) gameState="title";
     return;
   }
-  
-  if (gameState === "difficultySelect") {
-      background(0);
-      if (backgroundImg) image(backgroundImg, backgroundX, 0, width, height);
-      fill(255);
-      textSize(48 * scaleFactor);
-      textAlign(CENTER, CENTER);
-      text("Select Difficulty", width / 2, height / 2 - 50 * scaleFactor);
-      easyButton.show();
-      hardButton.show();
-      return;
+
+  if(gameState==="title"){
+    background(0);
+    if(backgroundImg) image(backgroundImg,backgroundX,0,width,height);
+    if(titleImg) image(titleImg,0,0,width,height);
+    else { fill(255); textSize(32*scaleFactor); textAlign(CENTER,CENTER); text("Dungeons and Daisies Runner\nPress to Start",width/2,height/2); }
+    return;
   }
 
-  if (gameState === "instructions") {
-      background(0);
-      if (backgroundImg) image(backgroundImg, backgroundX, 0, width, height);
-      player.show();
-      sword.show();
-      fill(0, 150);
-      rect(0, 0, width, height);
-      fill(255);
-      textSize(32 * scaleFactor);
-      textAlign(CENTER, CENTER);
-      let instructions = `Defeat the Boss!\n\nDesktop: Arrow Keys to Move, Enter to Fire\nMobile: Use On-Screen Buttons`;
-      text(instructions, width / 2, height / 2 - 40 * scaleFactor);
-      playButton.show();
-      return;
+  if(gameState==="difficultySelect"){
+    background(0);
+    if(backgroundImg) image(backgroundImg,backgroundX,0,width,height);
+    fill(255); textSize(48*scaleFactor); textAlign(CENTER,CENTER);
+    text("Select Difficulty",width/2,height/2-50*scaleFactor);
+    easyButton.show(); hardButton.show();
+    return;
+  }
+
+  if(gameState==="instructions"){
+    background(0);
+    if(backgroundImg) image(backgroundImg,backgroundX,0,width,height);
+    player.show(); sword.show();
+    fill(0,150); rect(0,0,width,height);
+    fill(255); textSize(32*scaleFactor); textAlign(CENTER,CENTER);
+    text(`Defeat the Boss!\n\nDesktop: Arrow Keys to Move, Enter to Fire\nMobile: Use On-Screen Buttons`,width/2,height/2-40*scaleFactor);
+    playButton.show();
+    return;
   }
 
   background(0);
-  if (backgroundImg) {
-    image(backgroundImg, backgroundX, 0, width, height);
-    image(backgroundImg, backgroundX + width, 0, width, height);
+  if(backgroundImg){ image(backgroundImg,backgroundX,0,width,height); image(backgroundImg,backgroundX+width,0,width,height); }
+
+  if(gameState==="playing"&&score<200){
+    backgroundX+=baseSpeed*scaleFactor;
+    if(backgroundX<=-width) backgroundX+=width;
   }
 
-  if (gameState === "playing" && score < 200) { 
-    backgroundX += baseSpeed * scaleFactor;
-    if (backgroundX <= -width) {
-        backgroundX += width;
+  if(gameState==="playing"||gameState==="paused"||(score>=200&&!swordCollected)){
+    if(gameState!=="paused"){
+      if(frameCount%frameDelay===0)
+        currentFrame=(currentFrame+1)%(swordCollected?playerRunSwordSprites.length:playerRunSprites.length);
+      if(frameCount%300===0&&score<200) baseSpeed-=0.5;
+      if(frameCount>nextObstacleFrame&&score<200){
+        obstacles.push(new Obstacle());
+        nextObstacleFrame=frameCount+random(50,100)/(abs(baseSpeed)/6);
+      }
+      if(frameCount>nextDaisyFrame&&score<200){
+        daisies.push(new Daisy());
+        nextDaisyFrame=frameCount+random(80,150);
+      }
+      player.update();
     }
-  }
-
-  if (gameState === "playing" || gameState === "paused" || (score >= 200 && !swordCollected)) {
-    if (gameState !== "paused") {
-        if (frameCount % frameDelay === 0) {
-          currentFrame = (currentFrame + 1) % (swordCollected ? playerRunSwordSprites.length : playerRunSprites.length);
-        }
-
-        if (frameCount % 300 === 0 && score < 200) {
-          baseSpeed -= 0.5;
-        }
-        
-        if (frameCount > nextObstacleFrame && score < 200) {
-            obstacles.push(new Obstacle());
-            nextObstacleFrame = frameCount + random(50, 100) / (abs(baseSpeed)/6);
-        }
-        if (frameCount > nextDaisyFrame && score < 200) {
-            daisies.push(new Daisy());
-            nextDaisyFrame = frameCount + random(80, 150);
-        }
-
-        player.update();
-    }
-    
     player.show();
 
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-      if (gameState !== "paused") obstacles[i].update();
+    for(let i=obstacles.length-1;i>=0;i--){
+      if(gameState!=="paused") obstacles[i].update();
       obstacles[i].show();
-      if (obstacles[i].hits(player) && millis() - player.flashTimer > 2000) {
-        if (difficulty === "easy") {
-            lives--;
-            if (lives > 0) {
-                gameState = "paused";
-                pauseStartTime = millis();
-                player.flashTimer = millis();
-                obstacles.splice(i, 1);
-            } else {
-                gameOver = true;
-            }
-        } else {
-            gameOver = true;
-        }
-      } else if (obstacles[i].offscreen()) {
-        obstacles.splice(i, 1);
-      }
+      if(obstacles[i].hits(player)&&millis()-player.flashTimer>2000){
+        if(difficulty==="easy"){
+          lives--;
+          if(lives>0){ gameState="paused"; pauseStartTime=millis(); player.flashTimer=millis(); obstacles.splice(i,1); }
+          else gameOver=true;
+        } else gameOver=true;
+      } else if(obstacles[i].offscreen()) obstacles.splice(i,1);
     }
 
-    for (let i = daisies.length - 1; i >= 0; i--) {
-      if (gameState !== "paused") daisies[i].update();
+    for(let i=daisies.length-1;i>=0;i--){
+      if(gameState!=="paused") daisies[i].update();
       daisies[i].show();
-      if (daisies[i].hits(player)) {
-        score += 10;
-        if (daisySound && daisySound.isLoaded()) daisySound.play();
-        daisies.splice(i, 1);
-      } else if (daisies[i].offscreen()) {
-        daisies.splice(i, 1);
+      if(daisies[i].hits(player)){
+        score+=10;
+        if(daisySound&&daisySound.isLoaded()) daisySound.play();
+        daisies.splice(i,1);
+      } else if(daisies[i].offscreen()) daisies.splice(i,1);
+    }
+
+    if(gameState==="paused"&&millis()-pauseStartTime>2000) gameState="playing";
+
+    if(score>=200&&!sword&&!swordCollected){
+      obstacles=[];
+      if(song.isPlaying()){
+        song.stop();
+        if(bossMusic&&bossMusic.isLoaded()&&!bossMusic.isPlaying()) bossMusic.loop();
+      }
+      if(torchRadius<width){ torchRadius+=15*scaleFactor; }
+      else {
+        gameState="instructions"; sword=new Sword();
+        playButton=createButton('Play!'); playButton.class('game-btn');
+        playButton.position(width/2-50*scaleFactor,height-100*scaleFactor);
+        playButton.mousePressed(()=>{ gameState="playing"; playButton.hide(); });
       }
     }
 
-    if (gameState === "paused" && millis() - pauseStartTime > 2000) {
-        gameState = "playing";
-    }
+    if(sword){ sword.show(); if(sword.hits(player)){ swordCollected=true; sword=null; boss=new Boss(); gameState="boss"; } }
+  }
 
-    if (score >= 200 && !sword && !swordCollected) {
-        obstacles = []; 
-        if (song.isPlaying()) {
-            song.stop();
-            if (bossMusic && bossMusic.isLoaded() && !bossMusic.isPlaying()) {
-                bossMusic.loop();
-            }
-        }
-        if (torchRadius < width) {
-            torchRadius += 15 * scaleFactor;
-        } else {
-            gameState = "instructions";
-            sword = new Sword();
-            playButton = createButton('Play!');
-            playButton.class('game-btn');
-            playButton.position(width/2 - 50 * scaleFactor, height - 100 * scaleFactor);
-            playButton.mousePressed(() => {
-                gameState = "playing";
-                playButton.hide();
-            });
-        }
-    }
+  if(gameState==="boss"){
+    if(frameCount%frameDelay===0&&(keys['ArrowLeft']||keys['a']||keys['ArrowRight']||keys['d'])&&swordCollected)
+      currentFrame=(currentFrame+1)%playerRunSwordSprites.length;
+    if(frameCount%bossFrameDelay===0) bossCurrentFrame=(bossCurrentFrame+1)%bossSprites.length;
+    player.update(); player.show(); boss.update(); boss.show();
 
-    if (sword) {
-      sword.show();
-      if (sword.hits(player)) {
-        swordCollected = true;
-        sword = null;
-        boss = new Boss();
-        gameState = "boss";
+    for(let i=greenFlames.length-1;i>=0;i--){
+      greenFlames[i].update(); greenFlames[i].show();
+      if(greenFlames[i].hits(boss)){ boss.health-=1; boss.flashTimer=millis(); greenFlames.splice(i,1); }
+      else if(greenFlames[i].offscreen()) greenFlames.splice(i,1);
+    }
+    for(let i=redFlames.length-1;i>=0;i--){
+      redFlames[i].update(); redFlames[i].show();
+      if(redFlames[i].hits(player)){ player.health-=10; player.flashTimer=millis(); redFlames.splice(i,1); if(player.health<=0) handlePlayerDeath(); }
+      else if(redFlames[i].offscreen()) redFlames.splice(i,1);
+    }
+    if(boss.hits(player)&&millis()-player.flashTimer>1000){ player.health-=20; player.flashTimer=millis(); if(player.health<=0) handlePlayerDeath(); }
+    if(boss.health<=0){ score+=50; gameOver=true; }
+  }
+
+  if(gameState!=='title'&&gameState!=='difficultySelect'&&!sword&&!swordCollected) drawPixelatedTorchEffect();
+  if(difficulty==="easy") drawLives();
+
+  if(gameState==='boss'){
+    fill(255); textSize(24*scaleFactor); textAlign(LEFT);
+    text("Player HP: "+player.health,10*scaleFactor,50*scaleFactor);
+    fill(255,0,0); rect(10*scaleFactor,60*scaleFactor,player.health*2*scaleFactor,10*scaleFactor);
+    fill(255); textAlign(CENTER);
+    text("Boss HP: "+boss.health,width/2,30*scaleFactor);
+    fill(255,0,0); rect(width/2-100*scaleFactor,40*scaleFactor,boss.health*2*scaleFactor,10*scaleFactor);
+  } else if(gameState==='playing'||gameState==='paused'||(score>=200&&!swordCollected)){
+    fill(255); textSize(24*scaleFactor); textAlign(LEFT);
+    text("Score: "+score,10*scaleFactor,(difficulty==="easy")?50*scaleFactor:30*scaleFactor);
+  }
+
+  if(gameOver){
+    if(boss&&boss.health<=0){
+      fill(0,180); rect(0,0,width,height);
+      if(championImg){
+        let cw=width*0.8, ch=cw*(championImg.height/championImg.width);
+        image(championImg,width/2-cw/2,height/2-ch/1.5,cw,ch);
       }
-    }
-  }
-
-  if (gameState === "boss") {
-    if (frameCount % frameDelay === 0 && (keys['ArrowLeft'] || keys['a'] || keys['ArrowRight'] || keys['d']) && swordCollected) {
-      currentFrame = (currentFrame + 1) % playerRunSwordSprites.length;
-    }
-    if (frameCount % bossFrameDelay === 0) {
-        bossCurrentFrame = (bossCurrentFrame + 1) % bossSprites.length;
-    }
-
-    player.update();
-    player.show();
-    boss.update();
-    boss.show();
-
-    for (let i = greenFlames.length - 1; i >= 0; i--) {
-      greenFlames[i].update();
-      greenFlames[i].show();
-      if (greenFlames[i].hits(boss)) {
-        boss.health -= 1; 
-        boss.flashTimer = millis();
-        greenFlames.splice(i, 1);
-      } else if (greenFlames[i].offscreen()) {
-        greenFlames.splice(i, 1);
-      }
-    }
-
-    for (let i = redFlames.length - 1; i >= 0; i--) {
-      redFlames[i].update();
-      redFlames[i].show();
-      if (redFlames[i].hits(player)) {
-        player.health -= 10;
-        player.flashTimer = millis();
-        redFlames.splice(i, 1);
-        if (player.health <= 0) handlePlayerDeath();
-      } else if (redFlames[i].offscreen()) {
-        redFlames.splice(i, 1);
-      }
-    }
-
-    if (boss.hits(player) && millis() - player.flashTimer > 1000) {
-      player.health -= 20;
-      player.flashTimer = millis();
-      if (player.health <= 0) handlePlayerDeath();
-    }
-
-    if (boss.health <= 0) {
-      score += 50;
-      gameOver = true;
-    }
-  }
-  
-  if (gameState !== 'title' && gameState !== 'difficultySelect' && !sword && !swordCollected) {
-      drawPixelatedTorchEffect();
-  }
-
-  if (difficulty === "easy") {
-      drawLives();
-  }
-
-  if (gameState === 'boss') {
-    fill(255);
-    textSize(24 * scaleFactor);
-    textAlign(LEFT);
-    text("Player HP: " + player.health, 10 * scaleFactor, 50 * scaleFactor);
-    fill(255, 0, 0);
-    rect(10 * scaleFactor, 60 * scaleFactor, player.health * 2 * scaleFactor, 10 * scaleFactor);
-    fill(255);
-    textAlign(CENTER);
-    text("Boss HP: " + boss.health, width / 2, 30 * scaleFactor);
-    fill(255, 0, 0);
-    rect(width / 2 - 100 * scaleFactor, 40 * scaleFactor, boss.health * 2 * scaleFactor, 10 * scaleFactor);
-  } else if (gameState === 'playing' || gameState === 'paused' || (score >= 200 && !swordCollected)) {
-      fill(255);
-      textSize(24 * scaleFactor);
-      textAlign(LEFT);
-      let scoreY = (difficulty === "easy") ? 50 * scaleFactor : 30 * scaleFactor;
-      text("Score: " + score, 10 * scaleFactor, scoreY);
-  }
-
-
-  if (gameOver) {
-    if (boss && boss.health <= 0) {
-        fill(0, 180); 
-        rect(0, 0, width, height);
-        if (championImg) {
-            let champW = width * 0.8;
-            let champH = champW * (championImg.height / championImg.width);
-            image(championImg, width/2 - champW/2, height/2 - champH/1.5, champW, champH);
+      if(difficulty==='hard'){
+        if(!claimButton){
+          claimButton=createButton('CLAIM RELIC 🏆');
+          claimButton.class('game-btn');
+          claimButton.style('color','#FFD700');
+          claimButton.position(width/2-140*scaleFactor, height/2+60*scaleFactor);
+          claimButton.mousePressed(()=>{ window.openClaimModal(); });
         }
-        
-        if (difficulty === 'hard') {
-            if (!claimButton) {
-                claimButton = createButton('Claim WL');
-                claimButton.class('game-btn');
-                claimButton.position(width / 2 - 120 * scaleFactor, height / 2 + 60 * scaleFactor);
-                claimButton.mousePressed(() => {
-                    console.log("Claim WL button clicked!");
-                });
-            }
-        } else {
-             if (!restartButton) {
-              restartButton = createButton('Restart');
-              restartButton.class('game-btn');
-              restartButton.position(width / 2 - 80 * scaleFactor, height - 100 * scaleFactor);
-              restartButton.mousePressed(resetGame);
-            }
-        }
-    } else {
-        fill(0, 150);
-        rect(0, 0, width, height);
-        fill(255);
-        textSize(48 * scaleFactor);
-        textAlign(CENTER, CENTER);
-        text("Game Over", width / 2, height / 2 - 20 * scaleFactor);
-        textSize(24 * scaleFactor);
-        text("Score: " + score + "\nPress Space to Restart", width / 2, height / 2 + 20 * scaleFactor);
-        if (!restartButton) {
-          restartButton = createButton('Restart');
-          restartButton.class('game-btn');
-          restartButton.position(width / 2 - 80 * scaleFactor, height / 2 + 50 * scaleFactor);
+      } else {
+        if(!restartButton){
+          restartButton=createButton('Restart'); restartButton.class('game-btn');
+          restartButton.position(width/2-80*scaleFactor,height-100*scaleFactor);
           restartButton.mousePressed(resetGame);
         }
+      }
+    } else {
+      fill(0,150); rect(0,0,width,height);
+      fill(255); textSize(48*scaleFactor); textAlign(CENTER,CENTER);
+      text("Game Over",width/2,height/2-20*scaleFactor);
+      textSize(24*scaleFactor);
+      text("Score: "+score+"\nPress Space to Restart",width/2,height/2+20*scaleFactor);
+      if(!restartButton){
+        restartButton=createButton('Restart'); restartButton.class('game-btn');
+        restartButton.position(width/2-80*scaleFactor,height/2+50*scaleFactor);
+        restartButton.mousePressed(resetGame);
+      }
     }
-    
-    noLoop(); 
+    noLoop();
   }
 }
 </script>
