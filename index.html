@@ -756,7 +756,10 @@ function draw() {
       else if(redFlames[i].offscreen()) redFlames.splice(i,1);
     }
     if(boss.hits(player)&&millis()-player.flashTimer>1000){ player.health-=20; player.flashTimer=millis(); if(player.health<=0) handlePlayerDeath(); }
-    if(boss.health<=0){ score+=50; gameOver=true; }
+    if(boss.health<=0){
+      score+=50; gameOver=true;
+      if(bossMusic && bossMusic.isPlaying()) bossMusic.stop();
+    }
   }
 
   if(gameState!=='title'&&gameState!=='difficultySelect'&&!sword&&!swordCollected) drawPixelatedTorchEffect();
@@ -788,6 +791,7 @@ function draw() {
           claimButton.style('color','#FFD700');
           claimButton.position(width/2-140*scaleFactor, height/2+60*scaleFactor);
           claimButton.mousePressed(()=>{ window.openClaimModal(); });
+          claimButton.elt.addEventListener('touchend',(e)=>{ e.preventDefault(); e.stopPropagation(); window.openClaimModal(); });
         }
       } else {
         if(!restartButton){
