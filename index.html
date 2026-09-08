@@ -157,12 +157,12 @@
 
 <!-- Relic claim modal -->
 <div id="claimModal">
-  <div id="claimBox">
+  <div id="claimBox" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">
     <h2>🏆 RELIC CLAIMED</h2>
     <p class="sub">You defeated the dragon.<br>The dungeon yields its treasure.</p>
     <p class="slot" id="slotDisplay">Checking available slots…</p>
-    <input type="email" id="claimEmail" placeholder="YOUR EMAIL" autocomplete="email">
-    <input type="text"  id="claimWallet" placeholder="SOLANA WALLET (OPTIONAL)">
+    <input type="email" id="claimEmail" placeholder="YOUR EMAIL" autocomplete="email" inputmode="email" style="-webkit-user-select:text;user-select:text;touch-action:manipulation">
+    <input type="text"  id="claimWallet" placeholder="SOLANA WALLET (OPTIONAL)" inputmode="text" style="-webkit-user-select:text;user-select:text;touch-action:manipulation">
     <button id="claimSubmit">CLAIM YOUR RELIC</button>
     <div id="claimMsg"></div>
     <button id="claimSkip">SKIP — I'LL CLAIM LATER</button>
@@ -185,6 +185,10 @@
   function setMsg(txt, cls){ msgEl.textContent=txt; msgEl.className=cls||''; }
 
   window.openClaimModal = function(){
+    // Suspend p5 canvas interaction so mobile keyboard and inputs work
+    const cv = document.querySelector('canvas');
+    if(cv){ cv.style.pointerEvents='none'; }
+    document.body.style.overflow='auto';
     modal.classList.add('open');
     slotEl.textContent = 'FIRST 50 SIGNALS ONLY — CLAIM YOUR SLOT';
     emailEl.value = '';
@@ -232,6 +236,7 @@
       setMsg('SIGNAL CONFIRMED. CHECK YOUR EMAIL FOR YOUR BASEMENT SERIAL. 🌼','ok');
       submitEl.textContent = 'CLAIMED ✓';
       skipEl.textContent = 'CLOSE';
+      skipEl.onclick = closeModal;
 
     } catch(e){
       setMsg('TRANSMISSION FAILED. TRY AGAIN.','err');
@@ -240,8 +245,14 @@
     }
   });
 
-  skipEl.addEventListener('click', ()=>{ modal.classList.remove('open'); });
-  modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('open'); });
+  function closeModal(){
+    modal.classList.remove('open');
+    const cv = document.querySelector('canvas');
+    if(cv){ cv.style.pointerEvents=''; }
+    document.body.style.overflow='hidden';
+  }
+  skipEl.addEventListener('click', closeModal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
 })();
 </script>
 
